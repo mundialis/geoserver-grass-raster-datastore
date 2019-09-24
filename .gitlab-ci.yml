@@ -15,8 +15,6 @@ variables:
 stages:
   - test
   - build
-  - build-docker
-  - deploy
 
 test:
   tags:

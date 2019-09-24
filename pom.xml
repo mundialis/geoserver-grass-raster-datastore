@@ -188,10 +188,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>it.geosolutions.imageio-ext</groupId>
-            <artifactId>imageio-ext-gdalframework</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.geotools</groupId>
             <artifactId>gt-coverage</artifactId>
         </dependency>
