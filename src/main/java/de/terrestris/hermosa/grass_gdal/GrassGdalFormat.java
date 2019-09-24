@@ -4,10 +4,11 @@ import org.geotools.coverage.grid.io.AbstractGridCoverage2DReader;
 import org.geotools.coverage.grid.io.AbstractGridFormat;
 import org.geotools.coverage.grid.io.imageio.GeoToolsWriteParams;
 import org.geotools.data.DataSourceException;
-import org.geotools.parameter.MatrixParameterDescriptors;
-import org.geotools.parameter.MatrixParameters;
+import org.geotools.parameter.*;
 import org.geotools.util.factory.Hints;
 import org.opengis.coverage.grid.GridCoverageWriter;
+import org.opengis.filter.Filter;
+import org.opengis.parameter.GeneralParameterDescriptor;
 
 import java.util.HashMap;
 

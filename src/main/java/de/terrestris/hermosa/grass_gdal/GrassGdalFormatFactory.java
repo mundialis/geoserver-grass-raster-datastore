@@ -6,6 +6,7 @@ import org.geotools.coverage.grid.io.GridFormatFactorySpi;
 public class GrassGdalFormatFactory implements GridFormatFactorySpi {
 
     @Override public AbstractGridFormat createFormat() {
+
         return new GrassGdalFormat();
     }
 
