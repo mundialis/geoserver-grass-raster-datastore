@@ -29,8 +29,7 @@ build:
 #    - tags
   script:
     - mkdir -p .m2
-    - echo '<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"><servers><server><id>nexus.terrestris.de-releases-hermosa</id><username>gs-deploy</username><password>$NEXUS_PASSWORD</password></server><server><id>nexus.terrestris.de-snapshots-hermosa</id><username>gs-deploy</username><password>$NEXUS_PASSWORD</password></server><server><id>nexus.terrestris.de</id><username>gs-deploy</username><password>$NEXUS_PASSWORD</password></server></servers></settings>' > .m2/settings.xml
-    - cat .m2/settings.xml
+    - echo "<settings xmlns=\"http://maven.apache.org/SETTINGS/1.0.0\"><servers><server><id>nexus.terrestris.de-releases-hermosa</id><username>gs-deploy</username><password>$NEXUS_PASSWORD</password></server><server><id>nexus.terrestris.de-snapshots-hermosa</id><username>gs-deploy</username><password>$NEXUS_PASSWORD</password></server><server><id>nexus.terrestris.de</id><username>gs-deploy</username><password>$NEXUS_PASSWORD</password></server></servers></settings>" > .m2/settings.xml
     - mvn -v
     - mvn -B -P reporting surefire-report:report site site:jar deploy
     - mvn -B -Dsonar.password=$SONAR_PASSWORD sonar:sonar
