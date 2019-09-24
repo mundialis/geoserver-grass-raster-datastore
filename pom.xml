@@ -191,6 +191,11 @@
             <groupId>org.geotools</groupId>
             <artifactId>gt-coverage</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
@@ -199,6 +204,12 @@
                 <groupId>org.geotools</groupId>
                 <artifactId>gt-coverage</artifactId>
                 <version>22.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>5.5.2</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
