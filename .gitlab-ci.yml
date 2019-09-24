@@ -17,8 +17,6 @@ stages:
   - build
 
 test:
-  tags:
-    - dockerbuilder
   image: terrestris/gitlab-runner-image:jdk11-mvn-3.6-3
   stage: test
   script:
@@ -28,8 +26,6 @@ test:
     - mvn clean test -B
 
 build:
-  tags:
-    - dockerbuilder
   image: terrestris/gitlab-runner-image:jdk11-mvn-3.6-3
   stage: build
 #  only:
