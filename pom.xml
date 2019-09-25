@@ -22,6 +22,16 @@
             <id>nexus.terrestris.de</id>
             <url>https://nexus.terrestris.de/repository/public/</url>
         </repository>
+        <repository>
+            <id>nexus.terrestris.de-releases-hermosa</id>
+            <name>Nexus Release Repository</name>
+            <url>https://nexus.terrestris.de/repository/hermosa/</url>
+        </repository>
+        <repository>
+            <id>nexus.terrestris.de-snapshots-hermosa</id>
+            <name>SHOGun Snapshot Repository</name>
+            <url>https://nexus.terrestris.de/repository/hermosa/</url>
+        </repository>
     </repositories>
 
     <distributionManagement>
@@ -42,6 +52,9 @@
 
         <downloadSources>true</downloadSources>
         <downloadJavadocs>true</downloadJavadocs>
+        <sonar.host.url>https://sq.terrestris.de</sonar.host.url>
+        <sonar.login>terrestris</sonar.login>
+        <sonar.sources>src/main/</sonar.sources>
     </properties>
 
     <profiles>
@@ -91,6 +104,11 @@
     <build>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.sonarsource.scanner.maven</groupId>
+                    <artifactId>sonar-maven-plugin</artifactId>
+                    <version>3.6.0.1398</version>
+                </plugin>
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>
                     <version>3.1.1</version>
@@ -188,12 +206,13 @@
 
     <dependencies>
         <dependency>
-            <groupId>it.geosolutions.imageio-ext</groupId>
-            <artifactId>imageio-ext-gdalframework</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.geotools</groupId>
             <artifactId>gt-coverage</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -203,6 +222,12 @@
                 <groupId>org.geotools</groupId>
                 <artifactId>gt-coverage</artifactId>
                 <version>22.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>5.5.2</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
