@@ -10,6 +10,10 @@ import org.opengis.coverage.grid.GridCoverageWriter;
 import org.opengis.filter.Filter;
 import org.opengis.parameter.GeneralParameterDescriptor;
 
+import javax.media.jai.ParameterList;
+import javax.media.jai.ParameterListDescriptor;
+import javax.media.jai.ParameterListDescriptorImpl;
+import javax.media.jai.ParameterListImpl;
 import java.util.HashMap;
 
 public class GrassGdalFormat extends AbstractGridFormat {
@@ -17,8 +21,22 @@ public class GrassGdalFormat extends AbstractGridFormat {
     public GrassGdalFormat() {
         HashMap<String, String> map = new HashMap<>();
         map.put("name", "Peter");
-        MatrixParameterDescriptors descriptor = new MatrixParameterDescriptors(map);
-        readParameters = new MatrixParameters(descriptor);
+        //MatrixParameterDescriptors descriptor = new MatrixParameterDescriptors(map);
+       // readParameters = new MatrixParameters(descriptor);
+        mInfo = new HashMap<String, String>();
+        mInfo.put("name", "GRASS GDAL");
+        mInfo.put("description", "Toller code");
+        mInfo.put("vendor", "wir");
+        mInfo.put("version", "0,0.0.0.0.1");
+
+        // reading parameters
+        readParameters =
+                new ParameterGroup(
+                        new DefaultParameterDescriptorGroup(
+                                mInfo,
+                                new GeneralParameterDescriptor[] {
+                                        READ_GRIDGEOMETRY2D
+                                }));
     }
 
     @Override public AbstractGridCoverage2DReader getReader(Object o) {
