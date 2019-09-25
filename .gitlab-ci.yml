@@ -7,7 +7,7 @@ cache:
     - .m2/
 
 variables:
-  MAVEN_OPTS: "-Xmx2g -Dmaven.repo.local=.m2"
+  MAVEN_OPTS: "-Xmx2g -Dmaven.repo.local=.m2 -gs .m2/settings.xml"
   DOCKER_TLS_CERTDIR: ""
 
 stages:
