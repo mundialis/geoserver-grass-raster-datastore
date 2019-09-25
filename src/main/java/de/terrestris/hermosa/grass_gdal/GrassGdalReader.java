@@ -1,22 +1,25 @@
 package de.terrestris.hermosa.grass_gdal;
 
+import org.gdal.gdal.Dataset;
+import org.gdal.gdal.gdal;
+import org.gdal.gdalconst.gdalconstConstants;
+import org.gdal.osr.SpatialReference;
 import org.geotools.coverage.Category;
 import org.geotools.coverage.CoverageFactoryFinder;
 import org.geotools.coverage.GridSampleDimension;
 import org.geotools.coverage.TypeMap;
-import org.geotools.coverage.grid.*;
+import org.geotools.coverage.grid.GeneralGridEnvelope;
+import org.geotools.coverage.grid.GridCoverage2D;
+import org.geotools.coverage.grid.GridCoverageFactory;
 import org.geotools.coverage.grid.io.AbstractGridCoverage2DReader;
 import org.geotools.data.DataSourceException;
-import org.geotools.geometry.Envelope2D;
 import org.geotools.geometry.GeneralEnvelope;
 import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.geotools.image.io.ImageIOExt;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.geotools.util.factory.Hints;
 import org.opengis.coverage.ColorInterpretation;
 import org.opengis.coverage.grid.Format;
-import org.opengis.geometry.Envelope;
 import org.opengis.parameter.GeneralParameterValue;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.datum.PixelInCell;
@@ -25,9 +28,20 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class GrassGdalReader extends AbstractGridCoverage2DReader {
+
+    private final int width;
+
+    private final int height;
+
+    private final int numBands;
+
+    private final File file;
 
     public GrassGdalReader(Object o) throws DataSourceException {
         this(o, null);
@@ -42,6 +56,26 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         originalEnvelope.setCoordinateReferenceSystem(crs);
         originalGridRange = new GeneralGridEnvelope(originalEnvelope, PixelInCell.CELL_CENTER);
         coverageName = "peter";
+        gdal.AllRegister();
+        file = (File) o;
+        Dataset dataset = gdal.OpenShared(file.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
+        width = dataset.getRasterXSize();
+        height = dataset.getRasterYSize();
+        String crsWkt;
+        String projRef = dataset.GetProjectionRef();
+        if (projRef != null) {
+            SpatialReference spatialReference = new SpatialReference(projRef);
+            crsWkt = spatialReference.ExportToPrettyWkt();
+            spatialReference.delete();
+            try {
+                crs = CRS.parseWKT(crsWkt);
+            } catch (FactoryException e) {
+                e.printStackTrace();
+            }
+        }
+        calculateEnvelope(dataset);
+        numBands = dataset.getRasterCount();
+        dataset.delete();
     }
 
     @Override public Format getFormat() {
@@ -80,10 +114,24 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
             bands[i] = new GridSampleDimension(bandName, categories, null);
         }
 
-
         final Map<String, Object> properties = new HashMap<>();
         GridCoverage2D peter = factory.create(coverageName, img, envelope, bands, null, properties);
         return peter;
+    }
+
+    private void calculateEnvelope(Dataset dataset) {
+        double[] transform = new double[6];
+        dataset.GetGeoTransform(transform);
+        double maxx = transform[0] + transform[1] * width
+            + transform[2] * height;
+        double miny = transform[3] + transform[4] * width
+            + transform[5] * height;
+        double minx = transform[0];
+        double maxy = transform[3];
+
+        originalEnvelope = new GeneralEnvelope(new double[]{minx, miny}, new double[]{maxx, maxy});
+        originalEnvelope.setCoordinateReferenceSystem(crs);
+        originalGridRange = new GeneralGridEnvelope(originalEnvelope, PixelInCell.CELL_CENTER);
     }
 
 }
