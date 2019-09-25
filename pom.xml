@@ -22,6 +22,16 @@
             <id>nexus.terrestris.de</id>
             <url>https://nexus.terrestris.de/repository/public/</url>
         </repository>
+        <repository>
+            <id>nexus.terrestris.de-releases-hermosa</id>
+            <name>Nexus Release Repository</name>
+            <url>https://nexus.terrestris.de/repository/hermosa/</url>
+        </repository>
+        <repository>
+            <id>nexus.terrestris.de-snapshots-hermosa</id>
+            <name>SHOGun Snapshot Repository</name>
+            <url>https://nexus.terrestris.de/repository/hermosa/</url>
+        </repository>
     </repositories>
 
     <distributionManagement>
