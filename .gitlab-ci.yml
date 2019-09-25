@@ -24,9 +24,9 @@ test:
 build:
   image: terrestris/gitlab-runner-image:jdk11-mvn-3.6-3
   stage: build
-#  only:
-#    - master@terrestris/bkg-testsuite
-#    - tags
+  only:
+    - master@terrestris/bkg-testsuite
+    - tags
   script:
     - mkdir -p .m2
     - echo "<settings xmlns=\"http://maven.apache.org/SETTINGS/1.0.0\"><servers><server><id>nexus.terrestris.de-releases-hermosa</id><username>gs-deploy</username><password>$NEXUS_PASSWORD</password></server><server><id>nexus.terrestris.de-snapshots-hermosa</id><username>gs-deploy</username><password>$NEXUS_PASSWORD</password></server><server><id>nexus.terrestris.de</id><username>gs-deploy</username><password>$NEXUS_PASSWORD</password></server></servers></settings>" > .m2/settings.xml
