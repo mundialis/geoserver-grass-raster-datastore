@@ -52,6 +52,9 @@
 
         <downloadSources>true</downloadSources>
         <downloadJavadocs>true</downloadJavadocs>
+        <sonar.host.url>https://sq.terrestris.de</sonar.host.url>
+        <sonar.login>terrestris</sonar.login>
+        <sonar.sources>src/main/</sonar.sources>
     </properties>
 
     <profiles>
@@ -101,6 +104,11 @@
     <build>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.sonarsource.scanner.maven</groupId>
+                    <artifactId>sonar-maven-plugin</artifactId>
+                    <version>3.6.0.1398</version>
+                </plugin>
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>
                     <version>3.1.1</version>
