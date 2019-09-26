@@ -42,14 +42,13 @@
         </repository>
         <snapshotRepository>
             <id>nexus.terrestris.de-snapshots-hermosa</id>
-            <name>SHOGun Snapshot Repository</name>
+            <name>Nexus Snapshot Repository</name>
             <url>https://nexus.terrestris.de/repository/hermosa/</url>
         </snapshotRepository>
     </distributionManagement>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
         <downloadSources>true</downloadSources>
         <downloadJavadocs>true</downloadJavadocs>
         <sonar.host.url>https://sq.terrestris.de</sonar.host.url>
@@ -112,11 +111,6 @@
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>
                     <version>3.1.1</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.sonarsource.scanner.maven</groupId>
-                    <artifactId>sonar-maven-plugin</artifactId>
-                    <version>3.6.0.1398</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -210,6 +204,14 @@
             <artifactId>gt-coverage</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.gdal</groupId>
+            <artifactId>gdal</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
@@ -228,6 +230,16 @@
                 <artifactId>junit-jupiter-api</artifactId>
                 <version>5.5.2</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.gdal</groupId>
+                <artifactId>gdal</artifactId>
+                <version>3.0.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.9</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
