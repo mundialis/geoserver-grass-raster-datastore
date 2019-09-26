@@ -9,6 +9,7 @@ import org.geotools.coverage.CoverageFactoryFinder;
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.GridCoverageFactory;
+import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.coverage.grid.io.AbstractGridCoverage2DReader;
 import org.geotools.data.DataSourceException;
 import org.geotools.geometry.GeneralEnvelope;
@@ -18,6 +19,7 @@ import org.geotools.util.factory.Hints;
 import org.geotools.util.logging.Logging;
 import org.opengis.coverage.grid.Format;
 import org.opengis.parameter.GeneralParameterValue;
+import org.opengis.parameter.ParameterValue;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.datum.PixelInCell;
 
@@ -34,11 +36,11 @@ import java.util.logging.Logger;
  */
 public class GrassGdalReader extends AbstractGridCoverage2DReader {
 
+    private static final Logger LOGGER = Logging.getLogger(GrassGdalReader.class);
+
     static {
         gdal.AllRegister();
     }
-
-    private static final Logger LOGGER = Logging.getLogger(GrassGdalReader.class);
 
     private final int width;
 
@@ -93,36 +95,85 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
 
     @Override public GridCoverage2D read(GeneralParameterValue[] parameters) throws IllegalArgumentException, IOException {
         Dataset dataset = gdal.OpenShared(file.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
-        // TODO
-        // this is the place where bbox handling needs to be added
-        ByteBuffer byteBuffer = dataset.GetRasterBand(1).ReadRaster_Direct(0, 0, width, height, gdalconstConstants.GDT_UInt16);
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        try {
+            int[] imageBounds = new int[]{0, 0, width, height};
 
-        // TODO:
-        // GRASS supports GDT_UInt16/32, float and double, so these need to be added here
-        ShortBuffer buffer = byteBuffer.asShortBuffer();
-        float[][] matrix = new float[height][width];
-        for (int x = 0; x < width; ++x) {
-            for (int y = 0; y < height; ++y) {
-                matrix[y][x] = Short.toUnsignedInt(buffer.get(y * width + x));
+            for (GeneralParameterValue value : parameters) {
+                if (value.getDescriptor().getName().getCode().equals("ReadGridGeometry2D")) {
+                    GridGeometry2D geometry2D = (GridGeometry2D) ((ParameterValue) value).getValue();
+                    GeneralEnvelope bbox = GeneralEnvelope.toGeneralEnvelope(geometry2D.getEnvelope2D());
+                    imageBounds = calculateRequiredPixels(bbox);
+                }
+            }
+
+            ByteBuffer byteBuffer = dataset.GetRasterBand(1)
+                .ReadRaster_Direct(imageBounds[0], imageBounds[1], imageBounds[2], imageBounds[3],
+                    gdalconstConstants.GDT_UInt16);
+            if (byteBuffer == null) {
+                return null;
+            }
+            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+            // TODO:
+            // GRASS supports GDT_UInt16/32, float and double, so these need to be added here
+            ShortBuffer buffer = byteBuffer.asShortBuffer();
+            float[][] matrix = new float[imageBounds[3]][imageBounds[2]];
+            for (int x = 0; x < imageBounds[2]; ++x) {
+                for (int y = 0; y < imageBounds[3]; ++y) {
+                    matrix[y][x] = Short.toUnsignedInt(buffer.get(y * imageBounds[2] + x));
+                }
+            }
+
+            final GridCoverageFactory factory = CoverageFactoryFinder.getGridCoverageFactory(null);
+
+            return factory.create(file.getName(), matrix, calculateSubEnvelope(imageBounds));
+        } finally {
+            if (dataset != null) {
+                dataset.delete();
             }
         }
-        dataset.delete();
+    }
 
-        final GridCoverageFactory factory = CoverageFactoryFinder.getGridCoverageFactory(null);
+    private int[] calculateRequiredPixels(GeneralEnvelope bbox) {
+        double origMinX = originalEnvelope.getMinimum(0);
+        double minx = Math.max(bbox.getMinimum(0), origMinX);
+        double origMinY = originalEnvelope.getMinimum(1);
+        double miny = Math.max(bbox.getMinimum(1), origMinY);
+        double origMaxX = originalEnvelope.getMaximum(0);
+        double maxx = Math.min(bbox.getMaximum(0), origMaxX);
+        double origMaxY = originalEnvelope.getMaximum(1);
+        double maxy = Math.min(bbox.getMaximum(1), origMaxY);
+        double diff = minx - origMinX;
+        double x = diff / resx;
+        diff = Math.abs(maxy - origMaxY);
+        double y = diff / Math.abs(resy);
+        diff = maxx - minx;
+        double width = diff / resx;
+        diff = maxy - miny;
+        double height = diff / Math.abs(resy);
+        return new int[]{(int) Math.floor(x), (int) Math.floor(y), (int) Math.ceil(width), (int) Math.ceil(height)};
+    }
 
-        return factory.create(file.getName(), matrix, originalEnvelope);
+    private GeneralEnvelope calculateSubEnvelope(int[] imageCoordinates) {
+        double minx = originalEnvelope.getMinimum(0) + imageCoordinates[0] * resx;
+        double maxx = minx + imageCoordinates[2] * resx;
+        double maxy = originalEnvelope.getMaximum(1) - Math.abs(imageCoordinates[1] * resy);
+        double miny = maxy - Math.abs(imageCoordinates[3] * resy);
+
+        GeneralEnvelope generalEnvelope = new GeneralEnvelope(new double[]{minx, miny}, new double[]{maxx, maxy});
+        generalEnvelope.setCoordinateReferenceSystem(crs);
+        return generalEnvelope;
     }
 
     private void calculateEnvelope(Dataset dataset) {
         double[] transform = new double[6];
         dataset.GetGeoTransform(transform);
         double maxx = transform[0] + transform[1] * width + transform[2] * height;
-        double miny = transform[3] + transform[4] * width + transform[5] * height;
+        double miny = transform[3] + transform[5] * height + transform[4] * width;
         double minx = transform[0];
         double maxy = transform[3];
         resx = transform[1];
-        resy = transform[4];
+        resy = transform[5];
 
         originalEnvelope = new GeneralEnvelope(new double[]{minx, miny}, new double[]{maxx, maxy});
         originalEnvelope.setCoordinateReferenceSystem(crs);
