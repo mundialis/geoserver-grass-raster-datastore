@@ -11,6 +11,7 @@ import org.geotools.util.factory.Hints;
 import org.geotools.util.logging.Logging;
 import org.opengis.coverage.grid.GridCoverageWriter;
 import org.opengis.parameter.GeneralParameterDescriptor;
+import org.opengis.referencing.FactoryException;
 
 import java.util.HashMap;
 import java.util.logging.Logger;
@@ -40,6 +41,8 @@ public class GrassGdalFormat extends AbstractGridFormat {
         } catch (DataSourceException e) {
             LOGGER.warning("Could not create a GDAL GRASS reader: " + e.getMessage());
             LOGGER.fine("Stack trace: " + ExceptionUtils.getStackTrace(e));
+        } catch (FactoryException e) {
+            e.printStackTrace();
         }
         return null;
     }
@@ -50,6 +53,8 @@ public class GrassGdalFormat extends AbstractGridFormat {
         } catch (DataSourceException e) {
             LOGGER.warning("Could not create a GDAL GRASS reader: " + e.getMessage());
             LOGGER.fine("Stack trace: " + ExceptionUtils.getStackTrace(e));
+        } catch (FactoryException e) {
+            e.printStackTrace();
         }
         return null;
     }

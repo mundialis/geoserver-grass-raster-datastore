@@ -1,6 +1,7 @@
 package de.terrestris.hermosa.grass_gdal;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.gdal.gdal.Band;
 import org.gdal.gdal.Dataset;
 import org.gdal.gdal.gdal;
 import org.gdal.gdalconst.gdalconstConstants;
@@ -14,7 +15,6 @@ import org.geotools.coverage.grid.io.AbstractGridCoverage2DReader;
 import org.geotools.data.DataSourceException;
 import org.geotools.geometry.GeneralEnvelope;
 import org.geotools.referencing.CRS;
-import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.geotools.util.factory.Hints;
 import org.geotools.util.logging.Logging;
 import org.opengis.coverage.grid.Format;
@@ -25,10 +25,12 @@ import org.opengis.referencing.datum.PixelInCell;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.ShortBuffer;
+import java.nio.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
+
+import static de.terrestris.hermosa.grass_gdal.GrassGdalReader.GdalTypes.UInt16;
 
 /**
  * Coverage reader class to read coverages from gdal. This is actually GRASS agnostic, but currently supports only
@@ -38,8 +40,21 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
 
     private static final Logger LOGGER = Logging.getLogger(GrassGdalReader.class);
 
+    enum GdalTypes {
+        UInt16,
+        UInt32,
+        Float64,
+        Float32
+    }
+
+    private static final Map<Integer, GdalTypes> GDAL_TYPES_MAP = new HashMap<>();
+
     static {
         gdal.AllRegister();
+        GDAL_TYPES_MAP.put(gdalconstConstants.GDT_UInt16, UInt16);
+        GDAL_TYPES_MAP.put(gdalconstConstants.GDT_UInt32, GdalTypes.UInt32);
+        GDAL_TYPES_MAP.put(gdalconstConstants.GDT_Float32, GdalTypes.Float32);
+        GDAL_TYPES_MAP.put(gdalconstConstants.GDT_Float64, GdalTypes.Float64);
     }
 
     private final int width;
@@ -54,15 +69,22 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
 
     private double resy;
 
-    public GrassGdalReader(Object o) throws DataSourceException {
+    public GrassGdalReader(Object o) throws DataSourceException, FactoryException {
         this(o, null);
     }
 
-    public GrassGdalReader(Object o, Hints hints) throws DataSourceException {
+    /**
+     * TODO: We need to abort requests if query changed immediately
+     * @param o
+     * @param hints
+     * @throws DataSourceException
+     * @throws FactoryException
+     */
+    public GrassGdalReader(Object o, Hints hints) throws DataSourceException, FactoryException {
         super(o, hints);
         file = (File) o;
         coverageFactory = new GridCoverageFactory();
-        crs = DefaultGeographicCRS.WGS84;
+        crs = CRS.decode("EPSG:32119");
         // instantiate the bounds based on the default CRS
         originalEnvelope = new GeneralEnvelope(CRS.getEnvelope(crs));
         originalEnvelope.setCoordinateReferenceSystem(crs);
@@ -105,23 +127,56 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
                     imageBounds = calculateRequiredPixels(bbox);
                 }
             }
-
-            ByteBuffer byteBuffer = dataset.GetRasterBand(1)
-                .ReadRaster_Direct(imageBounds[0], imageBounds[1], imageBounds[2], imageBounds[3],
-                    gdalconstConstants.GDT_UInt16);
+            Band band = dataset.GetRasterBand(1);
+            int dataType = band.getDataType();
+            ByteBuffer byteBuffer = band.ReadRaster_Direct(imageBounds[0], imageBounds[1], imageBounds[2], imageBounds[3], dataType);
             if (byteBuffer == null) {
                 return null;
             }
             byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
+            float[][] matrix = new float[imageBounds[3]][imageBounds[2]];
+
             // TODO:
             // GRASS supports GDT_UInt16/32, float and double, so these need to be added here
-            ShortBuffer buffer = byteBuffer.asShortBuffer();
-            float[][] matrix = new float[imageBounds[3]][imageBounds[2]];
-            for (int x = 0; x < imageBounds[2]; ++x) {
-                for (int y = 0; y < imageBounds[3]; ++y) {
-                    matrix[y][x] = Short.toUnsignedInt(buffer.get(y * imageBounds[2] + x));
+            switch(GDAL_TYPES_MAP.get(dataType)) {
+            case UInt16: {
+                ShortBuffer buffer = byteBuffer.asShortBuffer();
+                for (int x = 0; x < imageBounds[2]; ++x) {
+                    for (int y = 0; y < imageBounds[3]; ++y) {
+                        matrix[y][x] = Short.toUnsignedInt(buffer.get(y * imageBounds[2] + x));
+                    }
                 }
+                break;
+            }
+            case UInt32: {
+                IntBuffer buffer = byteBuffer.asIntBuffer();
+                for (int x = 0; x < imageBounds[2]; ++x) {
+                    for (int y = 0; y < imageBounds[3]; ++y) {
+                        matrix[y][x] = Integer.toUnsignedLong(buffer.get(y * imageBounds[2] + x));
+                    }
+                }
+                break;
+            }
+            case Float64: {
+                DoubleBuffer buffer = byteBuffer.asDoubleBuffer();
+                for (int x = 0; x < imageBounds[2]; ++x) {
+                    for (int y = 0; y < imageBounds[3]; ++y) {
+                        matrix[y][x] = Float.floatToIntBits((float) buffer.get(y * imageBounds[2] + x));
+                    }
+                }
+                break;
+            }
+            case Float32:
+                FloatBuffer buffer = byteBuffer.asFloatBuffer();
+                for (int x = 0; x < imageBounds[2]; ++x) {
+                    for (int y = 0; y < imageBounds[3]; ++y) {
+                        matrix[y][x] = Float.floatToIntBits((float) buffer.get(y * imageBounds[2] + x));
+                    }
+                }
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + GDAL_TYPES_MAP.get(dataType));
             }
 
             final GridCoverageFactory factory = CoverageFactoryFinder.getGridCoverageFactory(null);
