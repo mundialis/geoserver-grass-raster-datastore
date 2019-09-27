@@ -24,7 +24,6 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.datum.PixelInCell;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,7 +49,6 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
     private static final Map<Integer, GdalTypes> GDAL_TYPES_MAP = new HashMap<>();
 
     static {
-        gdal.AllRegister();
         GDAL_TYPES_MAP.put(gdalconstConstants.GDT_UInt16, UInt16);
         GDAL_TYPES_MAP.put(gdalconstConstants.GDT_UInt32, GdalTypes.UInt32);
         GDAL_TYPES_MAP.put(gdalconstConstants.GDT_Float32, GdalTypes.Float32);
@@ -61,24 +59,30 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
 
     private int height;
 
-    private int numBands;
-
     private final File file;
 
     private double resx;
 
     private double resy;
 
+    /**
+     * Construct a new GrassGdalReader without hints.
+     *
+     * @param o the file object
+     * @throws DataSourceException if anything goes wrong
+     * @throws FactoryException if anything goes wrong
+     */
     GrassGdalReader(Object o) throws DataSourceException, FactoryException {
         this(o, null);
     }
 
     /**
-     * TODO: We need to abort requests if query changed immediately
-     * @param o
-     * @param hints
-     * @throws DataSourceException
-     * @throws FactoryException
+     * Construct a new GrassGdalReader.
+     *
+     * @param o     the file object
+     * @param hints some hints
+     * @throws DataSourceException if anything goes wrong
+     * @throws FactoryException if anything goes wrong
      */
     GrassGdalReader(Object o, Hints hints) throws DataSourceException, FactoryException {
         super(o, hints);
@@ -112,7 +116,8 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
                 }
             }
             calculateEnvelope(dataset);
-            numBands = dataset.getRasterCount();
+            // the number of bands can be extracted from the dataset:
+            // numBands = dataset.getRasterCount();
         } finally {
             dataset.delete(); // this closes the dataset...
         }
@@ -122,7 +127,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         return new GrassGdalFormat();
     }
 
-    @Override public synchronized GridCoverage2D read(GeneralParameterValue[] parameters) throws IllegalArgumentException, IOException {
+    @Override public synchronized GridCoverage2D read(GeneralParameterValue[] parameters) throws IllegalArgumentException {
         Dataset dataset = gdal.OpenShared(file.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
         try {
             int[] imageBounds = new int[]{0, 0, width, height};
