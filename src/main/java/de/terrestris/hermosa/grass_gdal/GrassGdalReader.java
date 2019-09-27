@@ -43,6 +43,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
     private static final Logger LOGGER = Logging.getLogger(GrassGdalReader.class);
 
     enum GdalTypes {
+        Byte,
         UInt16,
         UInt32,
         Float64,
@@ -54,10 +55,12 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
     private static final Map<Integer, Integer> DATABUFFER_TYPES_MAP = new HashMap<>();
 
     static {
+        GDAL_TYPES_MAP.put(gdalconstConstants.GDT_Byte, GdalTypes.Byte);
         GDAL_TYPES_MAP.put(gdalconstConstants.GDT_UInt16, UInt16);
         GDAL_TYPES_MAP.put(gdalconstConstants.GDT_UInt32, GdalTypes.UInt32);
         GDAL_TYPES_MAP.put(gdalconstConstants.GDT_Float32, GdalTypes.Float32);
         GDAL_TYPES_MAP.put(gdalconstConstants.GDT_Float64, GdalTypes.Float64);
+        DATABUFFER_TYPES_MAP.put(gdalconstConstants.GDT_Byte, DataBuffer.TYPE_BYTE);
         DATABUFFER_TYPES_MAP.put(gdalconstConstants.GDT_UInt16, DataBuffer.TYPE_SHORT);
         DATABUFFER_TYPES_MAP.put(gdalconstConstants.GDT_UInt32, DataBuffer.TYPE_INT);
         DATABUFFER_TYPES_MAP.put(gdalconstConstants.GDT_Float32, DataBuffer.TYPE_FLOAT);
@@ -181,6 +184,16 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
         switch (GDAL_TYPES_MAP.get(dataType)) {
+        case Byte: {
+            byte[] bytes = new byte[imageBounds[2] * imageBounds[3]];
+            byteBuffer.get(bytes);
+            int[] ints = new int[bytes.length];
+            for (int i = 0; i < ints.length; ++i) {
+                ints[i] = Short.toUnsignedInt(bytes[i]);
+            }
+            raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, ints);
+            break;
+        }
         case UInt16: {
             ShortBuffer buffer = byteBuffer.asShortBuffer();
             short[] shorts = new short[imageBounds[2] * imageBounds[3]];
@@ -193,7 +206,6 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
             break;
         }
         case UInt32: {
-            // TODO untested, should work
             IntBuffer buffer = byteBuffer.asIntBuffer();
             int[] ints = new int[imageBounds[2] * imageBounds[3]];
             buffer.get(ints);
@@ -201,7 +213,6 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
             break;
         }
         case Float64: {
-            // TODO untested, should work
             DoubleBuffer buffer = byteBuffer.asDoubleBuffer();
             double[] doubles = new double[imageBounds[2] * imageBounds[3]];
             buffer.get(doubles);
