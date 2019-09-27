@@ -69,7 +69,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
 
     private double resy;
 
-    public GrassGdalReader(Object o) throws DataSourceException, FactoryException {
+    GrassGdalReader(Object o) throws DataSourceException, FactoryException {
         this(o, null);
     }
 
@@ -80,7 +80,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
      * @throws DataSourceException
      * @throws FactoryException
      */
-    public GrassGdalReader(Object o, Hints hints) throws DataSourceException, FactoryException {
+    GrassGdalReader(Object o, Hints hints) throws DataSourceException, FactoryException {
         super(o, hints);
         file = (File) o;
         coverageFactory = new GridCoverageFactory();
@@ -137,8 +137,6 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
 
             float[][] matrix = new float[imageBounds[3]][imageBounds[2]];
 
-            // TODO:
-            // GRASS supports GDT_UInt16/32, float and double, so these need to be added here
             switch(GDAL_TYPES_MAP.get(dataType)) {
             case UInt16: {
                 ShortBuffer buffer = byteBuffer.asShortBuffer();
@@ -150,6 +148,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
                 break;
             }
             case UInt32: {
+                // TODO untested, should work
                 IntBuffer buffer = byteBuffer.asIntBuffer();
                 for (int x = 0; x < imageBounds[2]; ++x) {
                     for (int y = 0; y < imageBounds[3]; ++y) {
@@ -159,10 +158,11 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
                 break;
             }
             case Float64: {
+                // TODO untested, should work (with loss of precision)
                 DoubleBuffer buffer = byteBuffer.asDoubleBuffer();
                 for (int x = 0; x < imageBounds[2]; ++x) {
                     for (int y = 0; y < imageBounds[3]; ++y) {
-                        matrix[y][x] = Float.floatToIntBits((float) buffer.get(y * imageBounds[2] + x));
+                        matrix[y][x] = (float) buffer.get(y * imageBounds[2] + x);
                     }
                 }
                 break;
@@ -171,7 +171,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
                 FloatBuffer buffer = byteBuffer.asFloatBuffer();
                 for (int x = 0; x < imageBounds[2]; ++x) {
                     for (int y = 0; y < imageBounds[3]; ++y) {
-                        matrix[y][x] = Float.floatToIntBits((float) buffer.get(y * imageBounds[2] + x));
+                        matrix[y][x] = buffer.get(y * imageBounds[2] + x);
                     }
                 }
                 break;
