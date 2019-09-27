@@ -34,7 +34,7 @@ import static de.terrestris.hermosa.grass_gdal.GrassGdalReader.GdalTypes.UInt16;
 
 /**
  * Coverage reader class to read coverages from gdal. This is actually GRASS agnostic, but currently supports only
- * UInt16 rasters with one band.
+ * rasters with one band and expects the values in little endian byte order.
  */
 public class GrassGdalReader extends AbstractGridCoverage2DReader {
 
@@ -57,11 +57,11 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         GDAL_TYPES_MAP.put(gdalconstConstants.GDT_Float64, GdalTypes.Float64);
     }
 
-    private final int width;
+    private int width;
 
-    private final int height;
+    private int height;
 
-    private final int numBands;
+    private int numBands;
 
     private final File file;
 
@@ -90,32 +90,39 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         originalEnvelope.setCoordinateReferenceSystem(crs);
         originalGridRange = new GeneralGridEnvelope(originalEnvelope, PixelInCell.CELL_CENTER);
         coverageName = file.getName();
+        initialize();
+    }
+
+    private synchronized void initialize() {
         Dataset dataset = gdal.OpenShared(file.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
-        width = dataset.getRasterXSize();
-        height = dataset.getRasterYSize();
-        String crsWkt;
-        String projRef = dataset.GetProjectionRef();
-        if (projRef != null) {
-            SpatialReference spatialReference = new SpatialReference(projRef);
-            crsWkt = spatialReference.ExportToPrettyWkt();
-            spatialReference.delete();
-            try {
-                crs = CRS.parseWKT(crsWkt);
-            } catch (FactoryException e) {
-                LOGGER.info("CRS WKT could not be parsed, ignoring.");
-                LOGGER.fine(e.getMessage() + ExceptionUtils.getStackTrace(e));
+        try {
+            width = dataset.getRasterXSize();
+            height = dataset.getRasterYSize();
+            String crsWkt;
+            String projRef = dataset.GetProjectionRef();
+            if (projRef != null) {
+                SpatialReference spatialReference = new SpatialReference(projRef);
+                crsWkt = spatialReference.ExportToPrettyWkt();
+                spatialReference.delete();
+                try {
+                    crs = CRS.parseWKT(crsWkt);
+                } catch (FactoryException e) {
+                    LOGGER.info("CRS WKT could not be parsed, ignoring.");
+                    LOGGER.fine(e.getMessage() + ExceptionUtils.getStackTrace(e));
+                }
             }
+            calculateEnvelope(dataset);
+            numBands = dataset.getRasterCount();
+        } finally {
+            dataset.delete(); // this closes the dataset...
         }
-        calculateEnvelope(dataset);
-        numBands = dataset.getRasterCount();
-        dataset.delete(); // this closes the dataset...
     }
 
     @Override public Format getFormat() {
         return new GrassGdalFormat();
     }
 
-    @Override public GridCoverage2D read(GeneralParameterValue[] parameters) throws IllegalArgumentException, IOException {
+    @Override public synchronized GridCoverage2D read(GeneralParameterValue[] parameters) throws IllegalArgumentException, IOException {
         Dataset dataset = gdal.OpenShared(file.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
         try {
             int[] imageBounds = new int[]{0, 0, width, height};
