@@ -99,7 +99,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
 
     private synchronized void initialize() throws DataSourceException {
         Dataset dataset = gdal.OpenShared(file.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
-        if (dataset == null) {
+        if (dataset == null || !dataset.GetDriver().getShortName().equals("GRASS")) {
             throw new DataSourceException("The file is not a valid GRASS raster.");
         }
         try {
