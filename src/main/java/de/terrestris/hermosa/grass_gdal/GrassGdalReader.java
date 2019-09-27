@@ -158,7 +158,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
                 .createBandedRaster(DATABUFFER_TYPES_MAP.get(dataType), imageBounds[2], imageBounds[3], numBands, null);
 
             for (int i = 0; i < numBands; ++i) {
-                copyBand(dataset.GetRasterBand(i + 1), imageBounds, raster);
+                copyBand(dataset.GetRasterBand(i + 1), i, imageBounds, raster);
             }
 
             final GridCoverageFactory factory = CoverageFactoryFinder.getGridCoverageFactory(null);
@@ -171,7 +171,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         }
     }
 
-    private void copyBand(Band band, int[] imageBounds, WritableRaster raster) {
+    private void copyBand(Band band, int bandIndex, int[] imageBounds, WritableRaster raster) {
         int dataType = band.getDataType();
         ByteBuffer byteBuffer = band
             .ReadRaster_Direct(imageBounds[0], imageBounds[1], imageBounds[2], imageBounds[3], dataType);
@@ -189,7 +189,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
             for (int i = 0; i < ints.length; ++i) {
                 ints[i] = Short.toUnsignedInt(shorts[i]);
             }
-            raster.setSamples(0, 0, imageBounds[2], imageBounds[3], 0, ints);
+            raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, ints);
             break;
         }
         case UInt32: {
@@ -197,7 +197,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
             IntBuffer buffer = byteBuffer.asIntBuffer();
             int[] ints = new int[imageBounds[2] * imageBounds[3]];
             buffer.get(ints);
-            raster.setSamples(0, 0, imageBounds[2], imageBounds[3], 0, ints);
+            raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, ints);
             break;
         }
         case Float64: {
@@ -205,14 +205,14 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
             DoubleBuffer buffer = byteBuffer.asDoubleBuffer();
             double[] doubles = new double[imageBounds[2] * imageBounds[3]];
             buffer.get(doubles);
-            raster.setSamples(0, 0, imageBounds[2], imageBounds[3], 0, doubles);
+            raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, doubles);
             break;
         }
         case Float32:
             FloatBuffer buffer = byteBuffer.asFloatBuffer();
             float[] floats = new float[imageBounds[2] * imageBounds[3]];
             buffer.get(floats);
-            raster.setSamples(0, 0, imageBounds[2], imageBounds[3], 0, floats);
+            raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, floats);
             break;
         default:
             throw new IllegalStateException("Unexpected value: " + GDAL_TYPES_MAP.get(dataType));
