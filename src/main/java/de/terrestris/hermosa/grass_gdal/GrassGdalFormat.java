@@ -1,6 +1,9 @@
 package de.terrestris.hermosa.grass_gdal;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.gdal.gdal.Dataset;
+import org.gdal.gdal.gdal;
+import org.gdal.gdalconst.gdalconstConstants;
 import org.geotools.coverage.grid.io.AbstractGridCoverage2DReader;
 import org.geotools.coverage.grid.io.AbstractGridFormat;
 import org.geotools.coverage.grid.io.imageio.GeoToolsWriteParams;
@@ -11,7 +14,9 @@ import org.geotools.util.factory.Hints;
 import org.geotools.util.logging.Logging;
 import org.opengis.coverage.grid.GridCoverageWriter;
 import org.opengis.parameter.GeneralParameterDescriptor;
+import org.opengis.referencing.FactoryException;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
@@ -22,7 +27,7 @@ public class GrassGdalFormat extends AbstractGridFormat {
 
     private static final Logger LOGGER = Logging.getLogger(GrassGdalFormat.class);
 
-    public GrassGdalFormat() {
+    GrassGdalFormat() {
         mInfo = new HashMap<>();
         mInfo.put("name", "GRASS GDAL");
         mInfo.put("description", "GRASS GDAL format");
@@ -40,6 +45,8 @@ public class GrassGdalFormat extends AbstractGridFormat {
         } catch (DataSourceException e) {
             LOGGER.warning("Could not create a GDAL GRASS reader: " + e.getMessage());
             LOGGER.fine("Stack trace: " + ExceptionUtils.getStackTrace(e));
+        } catch (FactoryException e) {
+            e.printStackTrace();
         }
         return null;
     }
@@ -50,6 +57,8 @@ public class GrassGdalFormat extends AbstractGridFormat {
         } catch (DataSourceException e) {
             LOGGER.warning("Could not create a GDAL GRASS reader: " + e.getMessage());
             LOGGER.fine("Stack trace: " + ExceptionUtils.getStackTrace(e));
+        } catch (FactoryException e) {
+            e.printStackTrace();
         }
         return null;
     }
@@ -59,7 +68,14 @@ public class GrassGdalFormat extends AbstractGridFormat {
     }
 
     @Override public boolean accepts(Object o, Hints hints) {
-        // TODO should be tweaked to check for a proper location and return false otherwise
+        File file = (File) o;
+        synchronized (this) {
+            Dataset dataset = gdal.OpenShared(file.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
+            if (dataset == null) {
+                return false;
+            }
+            dataset.delete();
+        }
         return true;
     }
 
