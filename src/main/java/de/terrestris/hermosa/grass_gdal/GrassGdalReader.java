@@ -30,6 +30,7 @@ import java.io.File;
 import java.nio.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static de.terrestris.hermosa.grass_gdal.GrassGdalReader.GdalTypes.UInt16;
@@ -150,15 +151,18 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
 
             for (GeneralParameterValue value : parameters) {
                 if (value.getDescriptor().getName().getCode().equals("ReadGridGeometry2D")) {
-                    GridGeometry2D geometry2D = (GridGeometry2D) ((ParameterValue) value).getValue();
+                    GridGeometry2D geometry2D = ((ParameterValue<GridGeometry2D>) value).getValue();
                     GeneralEnvelope bbox = GeneralEnvelope.toGeneralEnvelope(geometry2D.getEnvelope2D());
                     imageBounds = calculateRequiredPixels(bbox);
                 }
             }
             Band band = dataset.GetRasterBand(1);
             int dataType = band.getDataType();
+            Integer dataBufferType = DATABUFFER_TYPES_MAP.get(dataType);
+            LOGGER.fine("Using gdal type " + GDAL_TYPES_MAP.get(dataType));
+            LOGGER.fine("Using data buffer type " + dataBufferType);
             WritableRaster raster = RasterFactory
-                .createBandedRaster(DATABUFFER_TYPES_MAP.get(dataType), imageBounds[2], imageBounds[3], numBands, null);
+                .createBandedRaster(dataBufferType, imageBounds[2], imageBounds[3], numBands, null);
 
             for (int i = 0; i < numBands; ++i) {
                 copyBand(dataset.GetRasterBand(i + 1), i, imageBounds, raster);
@@ -167,6 +171,9 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
             final GridCoverageFactory factory = CoverageFactoryFinder.getGridCoverageFactory(null);
 
             return factory.create(file.getName(), raster, calculateSubEnvelope(imageBounds));
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Unable to create GRASS coverage. Original exception:", e);
+            throw e;
         } finally {
             if (dataset != null) {
                 dataset.delete();
