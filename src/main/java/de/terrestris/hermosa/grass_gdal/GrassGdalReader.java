@@ -112,31 +112,33 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         initialize();
     }
 
-    private synchronized void initialize() throws DataSourceException {
-        Dataset dataset = gdal.OpenShared(file.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
-        if (dataset == null || !dataset.GetDriver().getShortName().equals("GRASS")) {
-            throw new DataSourceException("The file is not a valid GRASS raster.");
-        }
-        try {
-            width = dataset.getRasterXSize();
-            height = dataset.getRasterYSize();
-            String crsWkt;
-            String projRef = dataset.GetProjectionRef();
-            if (projRef != null) {
-                SpatialReference spatialReference = new SpatialReference(projRef);
-                crsWkt = spatialReference.ExportToPrettyWkt();
-                spatialReference.delete();
-                try {
-                    crs = CRS.parseWKT(crsWkt);
-                } catch (FactoryException e) {
-                    LOGGER.info("CRS WKT could not be parsed, ignoring.");
-                    LOGGER.fine(e.getMessage() + ExceptionUtils.getStackTrace(e));
-                }
+    private void initialize() throws DataSourceException {
+        synchronized (GrassGdalReader.class) {
+            Dataset dataset = gdal.OpenShared(file.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
+            if (dataset == null || !dataset.GetDriver().getShortName().equals("GRASS")) {
+                throw new DataSourceException("The file is not a valid GRASS raster.");
             }
-            calculateEnvelope(dataset);
-            numBands = dataset.getRasterCount();
-        } finally {
-            dataset.delete(); // this closes the dataset...
+            try {
+                width = dataset.getRasterXSize();
+                height = dataset.getRasterYSize();
+                String crsWkt;
+                String projRef = dataset.GetProjectionRef();
+                if (projRef != null) {
+                    SpatialReference spatialReference = new SpatialReference(projRef);
+                    crsWkt = spatialReference.ExportToPrettyWkt();
+                    spatialReference.delete();
+                    try {
+                        crs = CRS.parseWKT(crsWkt);
+                    } catch (FactoryException e) {
+                        LOGGER.info("CRS WKT could not be parsed, ignoring.");
+                        LOGGER.fine(e.getMessage() + ExceptionUtils.getStackTrace(e));
+                    }
+                }
+                calculateEnvelope(dataset);
+                numBands = dataset.getRasterCount();
+            } finally {
+                dataset.delete(); // this closes the dataset...
+            }
         }
     }
 
@@ -144,39 +146,41 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         return new GrassGdalFormat();
     }
 
-    @Override public synchronized GridCoverage2D read(GeneralParameterValue[] parameters) throws IllegalArgumentException {
-        Dataset dataset = gdal.OpenShared(file.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
-        try {
-            int[] imageBounds = new int[]{0, 0, width, height};
+    @Override public GridCoverage2D read(GeneralParameterValue[] parameters) throws IllegalArgumentException {
+        synchronized (GrassGdalReader.class) {
+            Dataset dataset = gdal.OpenShared(file.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
+            try {
+                int[] imageBounds = new int[]{0, 0, width, height};
 
-            for (GeneralParameterValue value : parameters) {
-                if (value.getDescriptor().getName().getCode().equals("ReadGridGeometry2D")) {
-                    GridGeometry2D geometry2D = ((ParameterValue<GridGeometry2D>) value).getValue();
-                    GeneralEnvelope bbox = GeneralEnvelope.toGeneralEnvelope(geometry2D.getEnvelope2D());
-                    imageBounds = calculateRequiredPixels(bbox);
+                for (GeneralParameterValue value : parameters) {
+                    if (value.getDescriptor().getName().getCode().equals("ReadGridGeometry2D")) {
+                        GridGeometry2D geometry2D = ((ParameterValue<GridGeometry2D>) value).getValue();
+                        GeneralEnvelope bbox = GeneralEnvelope.toGeneralEnvelope(geometry2D.getEnvelope2D());
+                        imageBounds = calculateRequiredPixels(bbox);
+                    }
                 }
-            }
-            Band band = dataset.GetRasterBand(1);
-            int dataType = band.getDataType();
-            Integer dataBufferType = DATABUFFER_TYPES_MAP.get(dataType);
-            LOGGER.fine("Using gdal type " + GDAL_TYPES_MAP.get(dataType));
-            LOGGER.fine("Using data buffer type " + dataBufferType);
-            WritableRaster raster = RasterFactory
-                .createBandedRaster(dataBufferType, imageBounds[2], imageBounds[3], numBands, null);
+                Band band = dataset.GetRasterBand(1);
+                int dataType = band.getDataType();
+                Integer dataBufferType = DATABUFFER_TYPES_MAP.get(dataType);
+                LOGGER.fine("Using gdal type " + GDAL_TYPES_MAP.get(dataType));
+                LOGGER.fine("Using data buffer type " + dataBufferType);
+                WritableRaster raster = RasterFactory
+                    .createBandedRaster(dataBufferType, imageBounds[2], imageBounds[3], numBands, null);
 
-            for (int i = 0; i < numBands; ++i) {
-                copyBand(dataset.GetRasterBand(i + 1), i, imageBounds, raster);
-            }
+                for (int i = 0; i < numBands; ++i) {
+                    copyBand(dataset.GetRasterBand(i + 1), i, imageBounds, raster);
+                }
 
-            final GridCoverageFactory factory = CoverageFactoryFinder.getGridCoverageFactory(null);
+                final GridCoverageFactory factory = CoverageFactoryFinder.getGridCoverageFactory(null);
 
-            return factory.create(file.getName(), raster, calculateSubEnvelope(imageBounds));
-        } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Unable to create GRASS coverage. Original exception:", e);
-            throw e;
-        } finally {
-            if (dataset != null) {
-                dataset.delete();
+                return factory.create(file.getName(), raster, calculateSubEnvelope(imageBounds));
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Unable to create GRASS coverage. Original exception:", e);
+                throw e;
+            } finally {
+                if (dataset != null) {
+                    dataset.delete();
+                }
             }
         }
     }
