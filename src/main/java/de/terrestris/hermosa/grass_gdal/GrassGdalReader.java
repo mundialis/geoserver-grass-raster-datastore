@@ -12,6 +12,7 @@ import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.GridCoverageFactory;
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.coverage.grid.io.AbstractGridCoverage2DReader;
+import org.geotools.coverage.grid.io.GridCoverage2DReader;
 import org.geotools.data.DataSourceException;
 import org.geotools.geometry.GeneralEnvelope;
 import org.geotools.referencing.CRS;
@@ -19,17 +20,22 @@ import org.geotools.util.factory.Hints;
 import org.geotools.util.logging.Logging;
 import org.opengis.coverage.grid.Format;
 import org.opengis.parameter.GeneralParameterValue;
+import org.opengis.parameter.ParameterDescriptor;
 import org.opengis.parameter.ParameterValue;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.datum.PixelInCell;
+import org.sqlite.SQLiteConfig;
 
 import javax.media.jai.RasterFactory;
 import java.awt.image.DataBuffer;
 import java.awt.image.WritableRaster;
 import java.io.File;
 import java.nio.*;
-import java.util.HashMap;
-import java.util.Map;
+import java.sql.*;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -80,12 +86,16 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
 
     private int numBands;
 
+    private final Map<String, String> fileNames = new HashMap<>();
+
+    private final Map<String, List<Instant>> times = new HashMap<>();
+
     /**
      * Construct a new GrassGdalReader without hints.
      *
      * @param o the file object
      * @throws DataSourceException if anything goes wrong
-     * @throws FactoryException if anything goes wrong
+     * @throws FactoryException    if anything goes wrong
      */
     GrassGdalReader(Object o) throws DataSourceException, FactoryException {
         this(o, null);
@@ -97,7 +107,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
      * @param o     the file object
      * @param hints some hints
      * @throws DataSourceException if anything goes wrong
-     * @throws FactoryException if anything goes wrong
+     * @throws FactoryException    if anything goes wrong
      */
     GrassGdalReader(Object o, Hints hints) throws DataSourceException, FactoryException {
         super(o, hints);
@@ -109,10 +119,65 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         originalEnvelope.setCoordinateReferenceSystem(crs);
         originalGridRange = new GeneralGridEnvelope(originalEnvelope, PixelInCell.CELL_CENTER);
         coverageName = file.getName();
-        initialize();
+        if (file.getName().endsWith(".db")) {
+            initializeFromDB();
+        } else {
+            initialize(file);
+        }
     }
 
-    private void initialize() throws DataSourceException {
+    private void initializeFromDB() throws DataSourceException {
+        String db = "jdbc:sqlite:" + file.getAbsolutePath();
+        SQLiteConfig sqLiteConfig = new SQLiteConfig();
+        Properties properties = sqLiteConfig.toProperties();
+        properties.setProperty(SQLiteConfig.Pragma.DATE_STRING_FORMAT.pragmaName, "yyyy-MM-dd HH:mm:ss");
+        try {
+            String sql = "select id, name, mapset, temporal_type from raster_base";
+            String absoluteSql = "select start_time, end_time from raster_absolute_time where id = ?";
+            Connection conn = DriverManager.getConnection(db, properties);
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                String name = rs.getString("name");
+                String mapset = rs.getString("mapset");
+                String type = rs.getString("temporal_type");
+                if (!type.equals("absolute")) {
+                    continue;
+                }
+                File rasterFile = file.getParentFile().getParentFile().getParentFile();
+                rasterFile = new File(rasterFile, mapset);
+                rasterFile = new File(rasterFile, "cellhd");
+                rasterFile = new File(rasterFile, name);
+                fileNames.put(rs.getString("id"), rasterFile.getAbsolutePath());
+            }
+            rs.close();
+            stmt.close();
+            stmt = conn.prepareStatement(absoluteSql);
+            for (String id : fileNames.keySet()) {
+                stmt.setString(1, id);
+                rs = stmt.executeQuery();
+                if (rs.next()) {
+                    Timestamp start = rs.getTimestamp("start_time");
+                    Timestamp end = rs.getTimestamp("end_time");
+                    Instant startTime = Instant.ofEpochMilli(start.getTime());
+                    Instant endTime = Instant.ofEpochMilli(end.getTime());
+                    List<Instant> list = new ArrayList<>();
+                    list.add(startTime);
+                    list.add(endTime);
+                    times.put(id, list);
+                }
+                rs.close();
+            }
+            stmt.close();
+            initialize(new File((String) fileNames.values().toArray()[0]));
+        } catch (SQLException e) {
+            e.printStackTrace();
+            LOGGER.log(Level.WARNING, "Unable to open sqlite db: " + e.getMessage());
+            LOGGER.log(Level.FINE, "Stack trace:", e);
+        }
+    }
+
+    private void initialize(File file) throws DataSourceException {
         synchronized (GrassGdalReader.class) {
             Dataset dataset = gdal.OpenShared(file.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
             if (dataset == null || !dataset.GetDriver().getShortName().equals("GRASS")) {
@@ -142,13 +207,19 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         }
     }
 
-    @Override public Format getFormat() {
+    @Override
+    public Format getFormat() {
         return new GrassGdalFormat();
     }
 
-    @Override public GridCoverage2D read(GeneralParameterValue[] parameters) throws IllegalArgumentException {
+    @Override
+    public GridCoverage2D read(GeneralParameterValue[] parameters) throws IllegalArgumentException {
+        Dataset dataset = null;
         synchronized (GrassGdalReader.class) {
-            Dataset dataset = gdal.OpenShared(file.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
+            File rasterFile = file;
+            if (file.getName().endsWith(".db")) {
+                rasterFile = new File(fileNames.values().toArray(new String[0])[0]);
+            }
             try {
                 int[] imageBounds = new int[]{0, 0, width, height};
 
@@ -158,7 +229,19 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
                         GeneralEnvelope bbox = GeneralEnvelope.toGeneralEnvelope(geometry2D.getEnvelope2D());
                         imageBounds = calculateRequiredPixels(bbox);
                     }
+                    if (value.getDescriptor().getName().getCode().equals("TIME")) {
+                        List list = (List) ((ParameterValue)value).getValue();
+                        Date date = (Date) list.get(0);
+                        Instant time = Instant.ofEpochMilli(date.getTime());
+                        for (Map.Entry<String, List<Instant>> item : times.entrySet()) {
+                            if (!time.isAfter(item.getValue().get(1)) && !time.isBefore(item.getValue().get(0))) {
+                                String id = item.getKey();
+                                rasterFile = new File(fileNames.get(id));
+                            }
+                        }
+                    }
                 }
+                dataset = gdal.OpenShared(rasterFile.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
                 Band band = dataset.GetRasterBand(1);
                 int dataType = band.getDataType();
                 Integer dataBufferType = DATABUFFER_TYPES_MAP.get(dataType);
@@ -195,49 +278,49 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
         switch (GDAL_TYPES_MAP.get(dataType)) {
-        case Byte: {
-            byte[] bytes = new byte[imageBounds[2] * imageBounds[3]];
-            byteBuffer.get(bytes);
-            int[] ints = new int[bytes.length];
-            for (int i = 0; i < ints.length; ++i) {
-                ints[i] = Short.toUnsignedInt(bytes[i]);
+            case Byte: {
+                byte[] bytes = new byte[imageBounds[2] * imageBounds[3]];
+                byteBuffer.get(bytes);
+                int[] ints = new int[bytes.length];
+                for (int i = 0; i < ints.length; ++i) {
+                    ints[i] = Short.toUnsignedInt(bytes[i]);
+                }
+                raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, ints);
+                break;
             }
-            raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, ints);
-            break;
-        }
-        case UInt16: {
-            ShortBuffer buffer = byteBuffer.asShortBuffer();
-            short[] shorts = new short[imageBounds[2] * imageBounds[3]];
-            buffer.get(shorts);
-            int[] ints = new int[shorts.length];
-            for (int i = 0; i < ints.length; ++i) {
-                ints[i] = Short.toUnsignedInt(shorts[i]);
+            case UInt16: {
+                ShortBuffer buffer = byteBuffer.asShortBuffer();
+                short[] shorts = new short[imageBounds[2] * imageBounds[3]];
+                buffer.get(shorts);
+                int[] ints = new int[shorts.length];
+                for (int i = 0; i < ints.length; ++i) {
+                    ints[i] = Short.toUnsignedInt(shorts[i]);
+                }
+                raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, ints);
+                break;
             }
-            raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, ints);
-            break;
-        }
-        case UInt32: {
-            IntBuffer buffer = byteBuffer.asIntBuffer();
-            int[] ints = new int[imageBounds[2] * imageBounds[3]];
-            buffer.get(ints);
-            raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, ints);
-            break;
-        }
-        case Float64: {
-            DoubleBuffer buffer = byteBuffer.asDoubleBuffer();
-            double[] doubles = new double[imageBounds[2] * imageBounds[3]];
-            buffer.get(doubles);
-            raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, doubles);
-            break;
-        }
-        case Float32:
-            FloatBuffer buffer = byteBuffer.asFloatBuffer();
-            float[] floats = new float[imageBounds[2] * imageBounds[3]];
-            buffer.get(floats);
-            raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, floats);
-            break;
-        default:
-            throw new IllegalStateException("Unexpected value: " + GDAL_TYPES_MAP.get(dataType));
+            case UInt32: {
+                IntBuffer buffer = byteBuffer.asIntBuffer();
+                int[] ints = new int[imageBounds[2] * imageBounds[3]];
+                buffer.get(ints);
+                raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, ints);
+                break;
+            }
+            case Float64: {
+                DoubleBuffer buffer = byteBuffer.asDoubleBuffer();
+                double[] doubles = new double[imageBounds[2] * imageBounds[3]];
+                buffer.get(doubles);
+                raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, doubles);
+                break;
+            }
+            case Float32:
+                FloatBuffer buffer = byteBuffer.asFloatBuffer();
+                float[] floats = new float[imageBounds[2] * imageBounds[3]];
+                buffer.get(floats);
+                raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, floats);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + GDAL_TYPES_MAP.get(dataType));
         }
     }
 
@@ -258,7 +341,10 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         double width = diff / resx;
         diff = maxy - miny;
         double height = diff / Math.abs(resy);
-        return new int[]{(int) Math.floor(x), (int) Math.floor(y), (int) Math.ceil(width), (int) Math.ceil(height)};
+        // make sure to at least have a 1 pixel box to avoid crashes later on
+        int targetWidth = Math.max((int) Math.ceil(width), 1);
+        int targetHeight = Math.max((int) Math.ceil(height), 1);
+        return new int[]{(int) Math.floor(x), (int) Math.floor(y), targetWidth, targetHeight};
     }
 
     private GeneralEnvelope calculateSubEnvelope(int[] imageCoordinates) {
@@ -285,6 +371,38 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         originalEnvelope = new GeneralEnvelope(new double[]{minx, miny}, new double[]{maxx, maxy});
         originalEnvelope.setCoordinateReferenceSystem(crs);
         originalGridRange = new GeneralGridEnvelope(originalEnvelope, PixelInCell.CELL_CENTER);
+    }
+
+    @Override
+    public String[] getMetadataNames(String coverageName) {
+        return new String[]{
+            GridCoverage2DReader.HAS_TIME_DOMAIN,
+            GridCoverage2DReader.TIME_DOMAIN
+        };
+    }
+
+    @Override
+    public String getMetadataValue(String coverageName, String name) {
+        if (name.equals(HAS_TIME_DOMAIN)) {
+            return "true";
+        }
+        if (name.equals(TIME_DOMAIN)) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX");
+            StringBuilder builder = new StringBuilder();
+            for (List<Instant> list : times.values()) {
+                builder.append(formatter.format(list.get(0)))
+                    .append('/')
+                    .append(formatter.format(list.get(1)))
+                .append(' ');
+            }
+            return builder.toString();
+        }
+        return null;
+    }
+
+    @Override
+    public Set<ParameterDescriptor<List>> getDynamicParameters(String coverageName) {
+        return new HashSet<>();
     }
 
 }
