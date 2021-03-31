@@ -19,17 +19,21 @@ import org.geotools.referencing.CRS;
 import org.geotools.util.factory.Hints;
 import org.geotools.util.logging.Logging;
 import org.opengis.coverage.grid.Format;
+import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.parameter.GeneralParameterValue;
 import org.opengis.parameter.ParameterDescriptor;
 import org.opengis.parameter.ParameterValue;
 import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.datum.PixelInCell;
+import org.opengis.referencing.operation.MathTransform;
 import org.sqlite.SQLiteConfig;
 
 import javax.media.jai.RasterFactory;
 import java.awt.image.DataBuffer;
 import java.awt.image.WritableRaster;
 import java.io.File;
+import java.io.IOException;
 import java.nio.*;
 import java.sql.*;
 import java.time.Instant;
@@ -38,8 +42,11 @@ import java.util.Date;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static de.terrestris.hermosa.grass_gdal.GrassGdalReader.GdalTypes.UInt16;
+import static java.time.ZoneOffset.UTC;
 
 /**
  * Coverage reader class to read coverages from gdal. This is actually GRASS agnostic, but currently supports only
@@ -60,6 +67,8 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
     private static final Map<Integer, GdalTypes> GDAL_TYPES_MAP = new HashMap<>();
 
     private static final Map<Integer, Integer> DATABUFFER_TYPES_MAP = new HashMap<>();
+
+    private static final Pattern CMD_REGEXP = Pattern.compile("maps=\"(.[^\"]*)\"");
 
     static {
         GDAL_TYPES_MAP.put(gdalconstConstants.GDT_Byte, GdalTypes.Byte);
@@ -85,6 +94,8 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
     private double resy;
 
     private int numBands;
+
+    private final Map<String, List<String>> rasters = new HashMap<>();
 
     private final Map<String, String> fileNames = new HashMap<>();
 
@@ -132,11 +143,25 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         Properties properties = sqLiteConfig.toProperties();
         properties.setProperty(SQLiteConfig.Pragma.DATE_STRING_FORMAT.pragmaName, "yyyy-MM-dd HH:mm:ss");
         try {
+            String datasetSql = "select id, command from strds_metadata";
             String sql = "select id, name, mapset, temporal_type from raster_base";
             String absoluteSql = "select start_time, end_time from raster_absolute_time where id = ?";
             Connection conn = DriverManager.getConnection(db, properties);
-            PreparedStatement stmt = conn.prepareStatement(sql);
+            PreparedStatement stmt = conn.prepareStatement(datasetSql);
             ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                String id = rs.getString("id");
+                String cmd = rs.getString("command");
+                Matcher matcher = CMD_REGEXP.matcher(cmd);
+                if (matcher.find()) {
+                    String[] files = matcher.group(1).split(",");
+                    rasters.put(id, Arrays.asList(files));
+                }
+            }
+            rs.close();
+            stmt.close();
+            stmt = conn.prepareStatement(sql);
+            rs = stmt.executeQuery();
             while (rs.next()) {
                 String name = rs.getString("name");
                 String mapset = rs.getString("mapset");
@@ -213,7 +238,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
     }
 
     @Override
-    public GridCoverage2D read(GeneralParameterValue[] parameters) throws IllegalArgumentException {
+    public GridCoverage2D read(String coverageName, GeneralParameterValue[] parameters) throws IllegalArgumentException, IOException {
         Dataset dataset = null;
         synchronized (GrassGdalReader.class) {
             File rasterFile = file;
@@ -236,7 +261,10 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
                         for (Map.Entry<String, List<Instant>> item : times.entrySet()) {
                             if (!time.isAfter(item.getValue().get(1)) && !time.isBefore(item.getValue().get(0))) {
                                 String id = item.getKey();
-                                rasterFile = new File(fileNames.get(id));
+                                File candidate = new File(fileNames.get(id));
+                                if (rasters.get(coverageName).contains(candidate.getName())) {
+                                    rasterFile = candidate;
+                                }
                             }
                         }
                     }
@@ -266,6 +294,11 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
                 }
             }
         }
+    }
+
+    @Override
+    public GridCoverage2D read(GeneralParameterValue[] parameters) throws IllegalArgumentException, IOException {
+        return read(coverageName, parameters);
     }
 
     private void copyBand(Band band, int bandIndex, int[] imageBounds, WritableRaster raster) {
@@ -387,15 +420,26 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
             return "true";
         }
         if (name.equals(TIME_DOMAIN)) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX");
-            StringBuilder builder = new StringBuilder();
+            DateTimeFormatter formatter = DateTimeFormatter
+                .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX")
+                .withZone(UTC);
+            Instant min = null;
+            Instant max = null;
             for (List<Instant> list : times.values()) {
-                builder.append(formatter.format(list.get(0)))
-                    .append('/')
-                    .append(formatter.format(list.get(1)))
-                .append(' ');
+                if (min == null) {
+                    min = list.get(0);
+                }
+                if (max == null) {
+                    max = list.get(1);
+                }
+                if (min.isAfter(list.get(0))) {
+                    min = list.get(0);
+                }
+                if (max.isBefore(list.get(1))) {
+                    max = list.get(1);
+                }
             }
-            return builder.toString();
+            return formatter.format(min) + "/" + formatter.format(max);
         }
         return null;
     }
@@ -403,6 +447,34 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
     @Override
     public Set<ParameterDescriptor<List>> getDynamicParameters(String coverageName) {
         return new HashSet<>();
+    }
+
+    @Override
+    public String[] getGridCoverageNames() {
+        if (!rasters.isEmpty()) {
+            return rasters.keySet().toArray(new String[0]);
+        }
+        return super.getGridCoverageNames();
+    }
+
+    @Override
+    public GeneralEnvelope getOriginalEnvelope(String coverageName) {
+        return super.getOriginalEnvelope(this.coverageName);
+    }
+
+    @Override
+    public GridEnvelope getOriginalGridRange(String coverageName) {
+        return super.getOriginalGridRange(this.coverageName);
+    }
+
+    @Override
+    public CoordinateReferenceSystem getCoordinateReferenceSystem(String coverageName) {
+        return super.getCoordinateReferenceSystem(this.coverageName);
+    }
+
+    @Override
+    public MathTransform getOriginalGridToWorld(String coverageName, PixelInCell pixInCell) {
+        return super.getOriginalGridToWorld(this.coverageName, pixInCell);
     }
 
 }
