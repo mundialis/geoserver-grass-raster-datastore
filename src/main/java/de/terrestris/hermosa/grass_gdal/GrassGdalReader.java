@@ -146,55 +146,56 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
             String datasetSql = "select id, command from strds_metadata";
             String sql = "select id, name, mapset, temporal_type from raster_base";
             String absoluteSql = "select start_time, end_time from raster_absolute_time where id = ?";
-            Connection conn = DriverManager.getConnection(db, properties);
-            PreparedStatement stmt = conn.prepareStatement(datasetSql);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                String id = rs.getString("id");
-                String cmd = rs.getString("command");
-                Matcher matcher = CMD_REGEXP.matcher(cmd);
-                if (matcher.find()) {
-                    String[] files = matcher.group(1).split(",");
-                    rasters.put(id, Arrays.asList(files));
-                }
-            }
-            rs.close();
-            stmt.close();
-            stmt = conn.prepareStatement(sql);
-            rs = stmt.executeQuery();
-            while (rs.next()) {
-                String name = rs.getString("name");
-                String mapset = rs.getString("mapset");
-                String type = rs.getString("temporal_type");
-                if (!type.equals("absolute")) {
-                    continue;
-                }
-                File rasterFile = file.getParentFile().getParentFile().getParentFile();
-                rasterFile = new File(rasterFile, mapset);
-                rasterFile = new File(rasterFile, "cellhd");
-                rasterFile = new File(rasterFile, name);
-                fileNames.put(rs.getString("id"), rasterFile.getAbsolutePath());
-            }
-            rs.close();
-            stmt.close();
-            stmt = conn.prepareStatement(absoluteSql);
-            for (String id : fileNames.keySet()) {
-                stmt.setString(1, id);
-                rs = stmt.executeQuery();
-                if (rs.next()) {
-                    Timestamp start = rs.getTimestamp("start_time");
-                    Timestamp end = rs.getTimestamp("end_time");
-                    Instant startTime = Instant.ofEpochMilli(start.getTime());
-                    Instant endTime = Instant.ofEpochMilli(end.getTime());
-                    List<Instant> list = new ArrayList<>();
-                    list.add(startTime);
-                    list.add(endTime);
-                    times.put(id, list);
+            try (Connection conn = DriverManager.getConnection(db, properties)) {
+                PreparedStatement stmt = conn.prepareStatement(datasetSql);
+                ResultSet rs = stmt.executeQuery();
+                while (rs.next()) {
+                    String id = rs.getString("id");
+                    String cmd = rs.getString("command");
+                    Matcher matcher = CMD_REGEXP.matcher(cmd);
+                    if (matcher.find()) {
+                        String[] files = matcher.group(1).split(",");
+                        rasters.put(id, Arrays.asList(files));
+                    }
                 }
                 rs.close();
+                stmt.close();
+                stmt = conn.prepareStatement(sql);
+                rs = stmt.executeQuery();
+                while (rs.next()) {
+                    String name = rs.getString("name");
+                    String mapset = rs.getString("mapset");
+                    String type = rs.getString("temporal_type");
+                    if (!type.equals("absolute")) {
+                        continue;
+                    }
+                    File rasterFile = file.getParentFile().getParentFile().getParentFile();
+                    rasterFile = new File(rasterFile, mapset);
+                    rasterFile = new File(rasterFile, "cellhd");
+                    rasterFile = new File(rasterFile, name);
+                    fileNames.put(rs.getString("id"), rasterFile.getAbsolutePath());
+                }
+                rs.close();
+                stmt.close();
+                stmt = conn.prepareStatement(absoluteSql);
+                for (String id : fileNames.keySet()) {
+                    stmt.setString(1, id);
+                    rs = stmt.executeQuery();
+                    if (rs.next()) {
+                        Timestamp start = rs.getTimestamp("start_time");
+                        Timestamp end = rs.getTimestamp("end_time");
+                        Instant startTime = Instant.ofEpochMilli(start.getTime());
+                        Instant endTime = Instant.ofEpochMilli(end.getTime());
+                        List<Instant> list = new ArrayList<>();
+                        list.add(startTime);
+                        list.add(endTime);
+                        times.put(id, list);
+                    }
+                    rs.close();
+                }
+                stmt.close();
+                initialize(new File((String) fileNames.values().toArray()[0]));
             }
-            stmt.close();
-            initialize(new File((String) fileNames.values().toArray()[0]));
         } catch (SQLException e) {
             e.printStackTrace();
             LOGGER.log(Level.WARNING, "Unable to open sqlite db: " + e.getMessage());
