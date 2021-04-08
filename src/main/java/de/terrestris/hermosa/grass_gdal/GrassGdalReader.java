@@ -16,6 +16,7 @@ import org.geotools.coverage.grid.io.GridCoverage2DReader;
 import org.geotools.data.DataSourceException;
 import org.geotools.geometry.GeneralEnvelope;
 import org.geotools.referencing.CRS;
+import org.geotools.util.DateRange;
 import org.geotools.util.factory.Hints;
 import org.geotools.util.logging.Logging;
 import org.opengis.coverage.grid.Format;
@@ -257,7 +258,16 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
                     }
                     if (value.getDescriptor().getName().getCode().equals("TIME")) {
                         List list = (List) ((ParameterValue)value).getValue();
-                        Date date = (Date) list.get(0);
+                        Date date;
+                        if (list.get(0) instanceof DateRange) {
+                            date = ((DateRange) list.get(0)).getMinValue();
+                            LOGGER.log(Level.FINE, "Using the min requested value for TIME filtering.");
+                        } else if (list.get(0) instanceof Date){
+                            date = (Date) list.get(0);
+                        } else {
+                            LOGGER.log(Level.FINE,"Found unknown objects when requested with TIME: " + list);
+                            continue;
+                        }
                         Instant time = Instant.ofEpochMilli(date.getTime());
                         for (Map.Entry<String, List<Instant>> item : times.entrySet()) {
                             if (!time.isAfter(item.getValue().get(1)) && !time.isBefore(item.getValue().get(0))) {
