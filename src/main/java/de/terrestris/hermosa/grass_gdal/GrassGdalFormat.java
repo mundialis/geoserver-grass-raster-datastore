@@ -18,6 +18,7 @@ import org.opengis.referencing.FactoryException;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -32,42 +33,41 @@ public class GrassGdalFormat extends AbstractGridFormat {
         mInfo.put("name", "GRASS GDAL");
         mInfo.put("description", "GRASS GDAL format");
         mInfo.put("vendor", "terrestris");
-        mInfo.put("version", "0.0.1");
+        mInfo.put("version", "0.0.2");
 
         // reading parameters
-        readParameters = new ParameterGroup(
-            new DefaultParameterDescriptorGroup(mInfo, new GeneralParameterDescriptor[]{READ_GRIDGEOMETRY2D}));
+        readParameters = new ParameterGroup(new DefaultParameterDescriptorGroup(mInfo, READ_GRIDGEOMETRY2D, TIME));
     }
 
-    @Override public AbstractGridCoverage2DReader getReader(Object o) {
+    @Override
+    public AbstractGridCoverage2DReader getReader(Object o) {
         try {
             return new GrassGdalReader(o);
-        } catch (DataSourceException e) {
+        } catch (DataSourceException | FactoryException e) {
             LOGGER.warning("Could not create a GDAL GRASS reader: " + e.getMessage());
-            LOGGER.fine("Stack trace: " + ExceptionUtils.getStackTrace(e));
-        } catch (FactoryException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.FINE, "Stack trace:", e);
         }
         return null;
     }
 
-    @Override public AbstractGridCoverage2DReader getReader(Object o, Hints hints) {
+    @Override
+    public AbstractGridCoverage2DReader getReader(Object o, Hints hints) {
         try {
             return new GrassGdalReader(o, hints);
-        } catch (DataSourceException e) {
+        } catch (DataSourceException | FactoryException e) {
             LOGGER.warning("Could not create a GDAL GRASS reader: " + e.getMessage());
-            LOGGER.fine("Stack trace: " + ExceptionUtils.getStackTrace(e));
-        } catch (FactoryException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.FINE, "Stack trace:", e);
         }
         return null;
     }
 
-    @Override public GridCoverageWriter getWriter(Object o) {
+    @Override
+    public GridCoverageWriter getWriter(Object o) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public boolean accepts(Object o, Hints hints) {
+    @Override
+    public boolean accepts(Object o, Hints hints) {
         File file = (File) o;
         synchronized (this) {
             Dataset dataset = gdal.OpenShared(file.getAbsolutePath(), gdalconstConstants.GA_ReadOnly);
@@ -79,11 +79,13 @@ public class GrassGdalFormat extends AbstractGridFormat {
         return true;
     }
 
-    @Override public GeoToolsWriteParams getDefaultImageIOWriteParameters() {
+    @Override
+    public GeoToolsWriteParams getDefaultImageIOWriteParameters() {
         throw new UnsupportedOperationException();
     }
 
-    @Override public GridCoverageWriter getWriter(Object o, Hints hints) {
+    @Override
+    public GridCoverageWriter getWriter(Object o, Hints hints) {
         throw new UnsupportedOperationException();
     }
 
