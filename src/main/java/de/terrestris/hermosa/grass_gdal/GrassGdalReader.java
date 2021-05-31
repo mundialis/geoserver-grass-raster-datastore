@@ -198,7 +198,6 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
                 initialize(new File((String) fileNames.values().toArray()[0]));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
             LOGGER.log(Level.WARNING, "Unable to open sqlite db: " + e.getMessage());
             LOGGER.log(Level.FINE, "Stack trace:", e);
         }
