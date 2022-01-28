@@ -1,6 +1,5 @@
 package de.terrestris.hermosa.grass_gdal;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.gdal.gdal.Dataset;
 import org.gdal.gdal.gdal;
 import org.gdal.gdalconst.gdalconstConstants;
@@ -13,7 +12,6 @@ import org.geotools.parameter.ParameterGroup;
 import org.geotools.util.factory.Hints;
 import org.geotools.util.logging.Logging;
 import org.opengis.coverage.grid.GridCoverageWriter;
-import org.opengis.parameter.GeneralParameterDescriptor;
 import org.opengis.referencing.FactoryException;
 
 import java.io.File;
@@ -42,6 +40,7 @@ public class GrassGdalFormat extends AbstractGridFormat {
     @Override
     public AbstractGridCoverage2DReader getReader(Object o) {
         try {
+            LOGGER.info("Creating new GRASS reader.");
             return new GrassGdalReader(o);
         } catch (DataSourceException | FactoryException e) {
             LOGGER.warning("Could not create a GDAL GRASS reader: " + e.getMessage());
