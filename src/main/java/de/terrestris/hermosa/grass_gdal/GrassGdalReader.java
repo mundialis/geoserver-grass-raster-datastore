@@ -60,7 +60,9 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
     enum GdalTypes {
         Byte,
         UInt16,
+        Int16,
         UInt32,
+        Int32,
         Float64,
         Float32
     }
@@ -74,12 +76,16 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
     static {
         GDAL_TYPES_MAP.put(gdalconstConstants.GDT_Byte, GdalTypes.Byte);
         GDAL_TYPES_MAP.put(gdalconstConstants.GDT_UInt16, UInt16);
+        GDAL_TYPES_MAP.put(gdalconstConstants.GDT_Int16, GdalTypes.Int16);
         GDAL_TYPES_MAP.put(gdalconstConstants.GDT_UInt32, GdalTypes.UInt32);
+        GDAL_TYPES_MAP.put(gdalconstConstants.GDT_Int32, GdalTypes.Int32);
         GDAL_TYPES_MAP.put(gdalconstConstants.GDT_Float32, GdalTypes.Float32);
         GDAL_TYPES_MAP.put(gdalconstConstants.GDT_Float64, GdalTypes.Float64);
         DATABUFFER_TYPES_MAP.put(gdalconstConstants.GDT_Byte, DataBuffer.TYPE_BYTE);
         DATABUFFER_TYPES_MAP.put(gdalconstConstants.GDT_UInt16, DataBuffer.TYPE_SHORT);
+        DATABUFFER_TYPES_MAP.put(gdalconstConstants.GDT_Int16, DataBuffer.TYPE_SHORT);
         DATABUFFER_TYPES_MAP.put(gdalconstConstants.GDT_UInt32, DataBuffer.TYPE_INT);
+        DATABUFFER_TYPES_MAP.put(gdalconstConstants.GDT_Int32, DataBuffer.TYPE_INT);
         DATABUFFER_TYPES_MAP.put(gdalconstConstants.GDT_Float32, DataBuffer.TYPE_FLOAT);
         DATABUFFER_TYPES_MAP.put(gdalconstConstants.GDT_Float64, DataBuffer.TYPE_DOUBLE);
     }
@@ -248,23 +254,26 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
             }
             try {
                 int[] imageBounds = new int[]{0, 0, width, height};
+                int[] finalSize = null;
 
                 for (GeneralParameterValue value : parameters) {
+                    LOGGER.log(Level.WARNING, value.getDescriptor().getName().getCode());
                     if (value.getDescriptor().getName().getCode().equals("ReadGridGeometry2D")) {
                         GridGeometry2D geometry2D = ((ParameterValue<GridGeometry2D>) value).getValue();
+                        finalSize = new int[]{geometry2D.getGridRange().getHigh(0) + 1, geometry2D.getGridRange().getHigh(1) + 1};
                         GeneralEnvelope bbox = GeneralEnvelope.toGeneralEnvelope(geometry2D.getEnvelope2D());
                         imageBounds = calculateRequiredPixels(bbox);
                     }
                     if (value.getDescriptor().getName().getCode().equals("TIME")) {
-                        List list = (List) ((ParameterValue)value).getValue();
+                        List list = (List) ((ParameterValue) value).getValue();
                         Date date;
                         if (list.get(0) instanceof DateRange) {
                             date = ((DateRange) list.get(0)).getMinValue();
                             LOGGER.log(Level.FINE, "Using the min requested value for TIME filtering.");
-                        } else if (list.get(0) instanceof Date){
+                        } else if (list.get(0) instanceof Date) {
                             date = (Date) list.get(0);
                         } else {
-                            LOGGER.log(Level.FINE,"Found unknown objects when requested with TIME: " + list);
+                            LOGGER.log(Level.FINE, "Found unknown objects when requested with TIME: " + list);
                             continue;
                         }
                         Instant time = Instant.ofEpochMilli(date.getTime());
@@ -283,13 +292,13 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
                 Band band = dataset.GetRasterBand(1);
                 int dataType = band.getDataType();
                 Integer dataBufferType = DATABUFFER_TYPES_MAP.get(dataType);
-                LOGGER.fine("Using gdal type " + GDAL_TYPES_MAP.get(dataType));
-                LOGGER.fine("Using data buffer type " + dataBufferType);
+                LOGGER.log(Level.FINE, "Using gdal type " + GDAL_TYPES_MAP.get(dataType));
+                LOGGER.log(Level.FINE, "Using data buffer type " + dataBufferType);
                 WritableRaster raster = RasterFactory
-                    .createBandedRaster(dataBufferType, imageBounds[2], imageBounds[3], numBands, null);
+                    .createBandedRaster(dataBufferType, finalSize[0], finalSize[1], numBands, null);
 
                 for (int i = 0; i < numBands; ++i) {
-                    copyBand(dataset.GetRasterBand(i + 1), i, imageBounds, raster);
+                    copyBand(dataset.GetRasterBand(i + 1), i, imageBounds, raster, finalSize);
                 }
 
                 final GridCoverageFactory factory = CoverageFactoryFinder.getGridCoverageFactory(null);
@@ -311,56 +320,85 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         return read(coverageName, parameters);
     }
 
-    private void copyBand(Band band, int bandIndex, int[] imageBounds, WritableRaster raster) {
+    private void copyBand(Band band, int bandIndex, int[] imageBounds, WritableRaster raster, int[] finalSize) {
         int dataType = band.getDataType();
-        ByteBuffer byteBuffer = band
-            .ReadRaster_Direct(imageBounds[0], imageBounds[1], imageBounds[2], imageBounds[3], dataType);
-        if (byteBuffer == null) {
-            return;
-        }
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+        ByteBuffer buffer;
 
         switch (GDAL_TYPES_MAP.get(dataType)) {
             case Byte: {
-                byte[] bytes = new byte[imageBounds[2] * imageBounds[3]];
-                byteBuffer.get(bytes);
+                buffer = ByteBuffer.allocateDirect(finalSize[0] * finalSize[1]);
+                break;
+            }
+            case UInt16:
+            case Int16: {
+                buffer = ByteBuffer.allocateDirect(finalSize[0] * finalSize[1] * 2);
+                break;
+            }
+            case UInt32:
+            case Int32:
+            case Float32: {
+                buffer = ByteBuffer.allocateDirect(finalSize[0] * finalSize[1] * 4);
+                break;
+            }
+            case Float64: {
+                buffer = ByteBuffer.allocateDirect(finalSize[0] * finalSize[1] * 8);
+                break;
+            }
+            default:
+                throw new IllegalStateException("Unexpected value: " + GDAL_TYPES_MAP.get(dataType));
+        }
+
+        int result = band
+            .ReadRaster_Direct(imageBounds[0], imageBounds[1], imageBounds[2], imageBounds[3], finalSize[0], finalSize[1], dataType, buffer);
+        if (result != 0) {
+            return;
+        }
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+
+        switch (GDAL_TYPES_MAP.get(dataType)) {
+            case Byte: {
+                byte[] bytes = new byte[finalSize[0] * finalSize[1]];
+                buffer.get(bytes);
                 int[] ints = new int[bytes.length];
                 for (int i = 0; i < ints.length; ++i) {
                     ints[i] = Short.toUnsignedInt(bytes[i]);
                 }
-                raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, ints);
+                raster.setSamples(0, 0, finalSize[0], finalSize[1], bandIndex, ints);
                 break;
             }
-            case UInt16: {
-                ShortBuffer buffer = byteBuffer.asShortBuffer();
-                short[] shorts = new short[imageBounds[2] * imageBounds[3]];
-                buffer.get(shorts);
+            case UInt16:
+            case Int16: {
+                ShortBuffer shortBuffer = buffer.asShortBuffer();
+                short[] shorts = new short[finalSize[0] * finalSize[1]];
+                shortBuffer.get(shorts);
                 int[] ints = new int[shorts.length];
                 for (int i = 0; i < ints.length; ++i) {
                     ints[i] = Short.toUnsignedInt(shorts[i]);
                 }
-                raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, ints);
+                raster.setSamples(0, 0, finalSize[0], finalSize[1], bandIndex, ints);
                 break;
             }
-            case UInt32: {
-                IntBuffer buffer = byteBuffer.asIntBuffer();
-                int[] ints = new int[imageBounds[2] * imageBounds[3]];
-                buffer.get(ints);
-                raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, ints);
+            case UInt32:
+            case Int32: {
+                IntBuffer intBuffer = buffer.asIntBuffer();
+                int[] ints = new int[finalSize[0] * finalSize[1]];
+                intBuffer.get(ints);
+                raster.setSamples(0, 0, finalSize[0], finalSize[1], bandIndex, ints);
                 break;
             }
             case Float64: {
-                DoubleBuffer buffer = byteBuffer.asDoubleBuffer();
-                double[] doubles = new double[imageBounds[2] * imageBounds[3]];
-                buffer.get(doubles);
-                raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, doubles);
+                DoubleBuffer doubleBuffer = buffer.asDoubleBuffer();
+                double[] doubles = new double[finalSize[0] * finalSize[1]];
+                doubleBuffer.get(doubles);
+                raster.setSamples(0, 0, finalSize[0], finalSize[1], bandIndex, doubles);
                 break;
             }
             case Float32:
-                FloatBuffer buffer = byteBuffer.asFloatBuffer();
-                float[] floats = new float[imageBounds[2] * imageBounds[3]];
-                buffer.get(floats);
-                raster.setSamples(0, 0, imageBounds[2], imageBounds[3], bandIndex, floats);
+                FloatBuffer floatBuffer = buffer.asFloatBuffer();
+                float[] floats = new float[finalSize[0] * finalSize[1]];
+                floatBuffer.get(floats);
+                raster.setSamples(0, 0, finalSize[0], finalSize[1], bandIndex, floats);
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + GDAL_TYPES_MAP.get(dataType));

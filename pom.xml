@@ -256,23 +256,23 @@
             <dependency>
                 <groupId>org.xerial</groupId>
                 <artifactId>sqlite-jdbc</artifactId>
-                <version>3.34.0</version>
+                <version>3.36.0.3</version>
             </dependency>
             <dependency>
                 <groupId>org.geotools</groupId>
                 <artifactId>gt-coverage</artifactId>
-                <version>25.0</version>
+                <version>25.2</version>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-api</artifactId>
-                <version>5.8.0-M1</version>
+                <version>5.8.0-RC1</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.gdal</groupId>
                 <artifactId>gdal</artifactId>
-                <version>3.2.0</version>
+                <version>3.3.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
