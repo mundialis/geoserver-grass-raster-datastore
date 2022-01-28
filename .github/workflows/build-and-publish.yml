@@ -1,0 +1,50 @@
+name: Build and publish GeoServer GRASS datastore
+
+on:
+  push:
+    branches:
+      - master
+  release:
+    types: [published]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v2
+
+    - name: Set up Java 11
+      uses: actions/setup-java@v1.4.3
+      with:
+        java-version: 11
+        java-package: jdk
+        architecture: x64
+
+    - name: Handle caching of maven repository
+      uses: actions/cache@v2
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: Create maven settings.xml with credentials
+      uses: whelk-io/maven-settings-xml-action@v2
+      with:
+        servers: '[
+                    { "id": "nexus.terrestris.de", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" },
+                    { "id": "terrestris-nexus", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" },
+                    { "id": "terrestris-nexus-snapshots", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" }
+                  ]'
+
+    - name: Build the datastore with Maven and publish artifacts to nexus
+      run: mvn -B deploy
+
+    - name: Build and deploy maven site
+      run: mvn -B -P reporting surefire-report:report site site:jar deploy
+
+    - name: Analyse code and publish to SonarQube
+      run: mvn -B -Dsonar.password=${{ secrets.SONAR_PASSWORD }} sonar:sonar

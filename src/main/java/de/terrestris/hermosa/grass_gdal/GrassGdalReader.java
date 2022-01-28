@@ -1,5 +1,21 @@
+/*
+ * Copyright 2019-present terrestris GmbH & Co. KG
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package de.terrestris.hermosa.grass_gdal;
 
+import lombok.Cleanup;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.gdal.gdal.Band;
 import org.gdal.gdal.Dataset;
@@ -153,53 +169,52 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
             String datasetSql = "select id, command from strds_metadata";
             String sql = "select id, name, mapset, temporal_type from raster_base";
             String absoluteSql = "select start_time, end_time from raster_absolute_time where id = ?";
-            try (Connection conn = DriverManager.getConnection(db, properties)) {
-                PreparedStatement stmt = conn.prepareStatement(datasetSql);
-                ResultSet rs = stmt.executeQuery();
-                while (rs.next()) {
-                    String id = rs.getString("id");
-                    String cmd = rs.getString("command");
-                    Matcher matcher = CMD_REGEXP.matcher(cmd);
-                    if (matcher.find()) {
-                        String[] files = matcher.group(1).split(",");
-                        rasters.put(id, Arrays.asList(files));
-                    }
+            @Cleanup Connection conn = DriverManager.getConnection(db, properties);
+            @Cleanup PreparedStatement stmt = conn.prepareStatement(datasetSql);
+            @Cleanup ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                String id = rs.getString("id");
+                String cmd = rs.getString("command");
+                Matcher matcher = CMD_REGEXP.matcher(cmd);
+                if (matcher.find()) {
+                    String[] files = matcher.group(1).split(",");
+                    rasters.put(id, Arrays.asList(files));
                 }
-                rs.close();
-                stmt.close();
-                stmt = conn.prepareStatement(sql);
+            }
+            rs.close();
+            stmt.close();
+            stmt = conn.prepareStatement(sql);
+            rs = stmt.executeQuery();
+            while (rs.next()) {
+                String name = rs.getString("name");
+                String mapset = rs.getString("mapset");
+                String type = rs.getString("temporal_type");
+                if (!type.equals("absolute")) {
+                    continue;
+                }
+                File rasterFile = file.getParentFile().getParentFile().getParentFile();
+                rasterFile = new File(rasterFile, mapset);
+                rasterFile = new File(rasterFile, "cellhd");
+                rasterFile = new File(rasterFile, name);
+                fileNames.put(rs.getString("id"), rasterFile.getAbsolutePath());
+            }
+            rs.close();
+            stmt.close();
+            stmt = conn.prepareStatement(absoluteSql);
+            for (String id : fileNames.keySet()) {
+                stmt.setString(1, id);
                 rs = stmt.executeQuery();
-                while (rs.next()) {
-                    String name = rs.getString("name");
-                    String mapset = rs.getString("mapset");
-                    String type = rs.getString("temporal_type");
-                    if (!type.equals("absolute")) {
-                        continue;
-                    }
-                    File rasterFile = file.getParentFile().getParentFile().getParentFile();
-                    rasterFile = new File(rasterFile, mapset);
-                    rasterFile = new File(rasterFile, "cellhd");
-                    rasterFile = new File(rasterFile, name);
-                    fileNames.put(rs.getString("id"), rasterFile.getAbsolutePath());
+                if (rs.next()) {
+                    Timestamp start = rs.getTimestamp("start_time");
+                    Timestamp end = rs.getTimestamp("end_time");
+                    Instant startTime = Instant.ofEpochMilli(start.getTime());
+                    Instant endTime = Instant.ofEpochMilli(end.getTime());
+                    List<Instant> list = new ArrayList<>();
+                    list.add(startTime);
+                    list.add(endTime);
+                    times.put(id, list);
                 }
                 rs.close();
-                stmt.close();
-                stmt = conn.prepareStatement(absoluteSql);
-                for (String id : fileNames.keySet()) {
-                    stmt.setString(1, id);
-                    rs = stmt.executeQuery();
-                    if (rs.next()) {
-                        Timestamp start = rs.getTimestamp("start_time");
-                        Timestamp end = rs.getTimestamp("end_time");
-                        Instant startTime = Instant.ofEpochMilli(start.getTime());
-                        Instant endTime = Instant.ofEpochMilli(end.getTime());
-                        List<Instant> list = new ArrayList<>();
-                        list.add(startTime);
-                        list.add(endTime);
-                        times.put(id, list);
-                    }
-                    rs.close();
-                }
                 stmt.close();
                 initialize(new File((String) fileNames.values().toArray()[0]));
             }
