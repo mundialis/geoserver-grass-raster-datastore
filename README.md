@@ -5,6 +5,10 @@ Prerequisites: Java 11 and maven 3.5
 * build with `mvn install`
 * copy into Geoserver's `WEB-INF/lib` to enable
 
+## Download
+
+You can also download released versions from [here](https://nexus.terrestris.de/#browse/browse:public:de%2Fterrestris%2Fgeoserver-grass-raster-datastore).
+
 ## Usage
 
 You can create datastore pointing to a single raster by pointing the file to an appropriate entry in the GRASS `cellhd`
