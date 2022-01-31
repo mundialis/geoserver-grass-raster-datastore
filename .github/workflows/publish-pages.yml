@@ -1,9 +1,6 @@
 name: Build and publish GeoServer GRASS datastore
 
 on:
-  push:
-    branches:
-      - master
   release:
     types: [published]
 
@@ -38,10 +35,8 @@ jobs:
                     { "id": "nexus.terrestris.de", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" },
                     { "id": "nexus.terrestris.de-geoserver-extras", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" },
                     { "id": "nexus.terrestris.de-snapshots-geoserver-extras", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" }
+                    { "id": "github", "username": "hwbllmnn", "password": "${{ secrets.PA_TOKEN }}" }
                   ]'
 
-    - name: Build the datastore with Maven and publish artifacts to nexus
-      run: mvn -B deploy
-
-    - name: Analyse code and publish to SonarQube
-      run: mvn -B -Dsonar.password=${{ secrets.SONAR_PASSWORD }} sonar:sonar
+    - name: Build and deploy maven site
+      run: mvn -B -P reporting,publish-site surefire-report:report site site:jar deploy

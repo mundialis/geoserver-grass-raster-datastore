@@ -28,27 +28,27 @@ import java.util.logging.Logger;
  */
 public class GrassGdalFormatFactory implements GridFormatFactorySpi {
 
-    private static final Logger LOGGER = Logging.getLogger(GridFormatFactorySpi.class);
+  private static final Logger LOGGER = Logging.getLogger(GridFormatFactorySpi.class);
 
-    static {
-        LOGGER.info("Initializing gdal...");
-        gdal.AllRegister();
-        LOGGER.info("Initialized gdal.");
-    }
+  static {
+    LOGGER.info("Initializing gdal...");
+    gdal.AllRegister();
+    LOGGER.info("Initialized gdal.");
+  }
 
-    @Override
-    public AbstractGridFormat createFormat() {
-        LOGGER.info("Creating GRASS GDAL format.");
-        return new GrassGdalFormat();
-    }
+  @Override
+  public AbstractGridFormat createFormat() {
+    LOGGER.info("Creating GRASS GDAL format.");
+    return new GrassGdalFormat();
+  }
 
-    @Override
-    public boolean isAvailable() {
-        // this prevents the datastore to be used with other GDAL drivers, it is unknown if using the other drivers would
-        // work (this should be tested at some point!)
-        Driver grass = gdal.GetDriverByName("GRASS");
-        LOGGER.info("GRASS driver available: " + (grass != null));
-        return grass != null;
-    }
+  @Override
+  public boolean isAvailable() {
+    // this prevents the datastore to be used with other GDAL drivers, it is unknown if using the other drivers would
+    // work (this should be tested at some point!)
+    Driver grass = gdal.GetDriverByName("GRASS");
+    LOGGER.info("GRASS driver available: " + (grass != null));
+    return grass != null;
+  }
 
 }
