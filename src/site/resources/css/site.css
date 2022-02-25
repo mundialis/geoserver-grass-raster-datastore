@@ -1,0 +1,22 @@
+a.externalLink,
+a.externalLink[href^=https],
+a.externalLink[href^=http] {
+    background: none;
+    padding: 0;
+    text-decoration: underline;
+}
+
+footer {
+  margin-bottom: 2em;
+  font-size: smaller;
+  text-align: center;
+}
+
+footer span.divider {
+  padding: 0 5px;
+  color: #ccc;
+}
+
+.breadcrumb {
+  padding-right: 40px;
+}
