@@ -21,7 +21,7 @@ developed by the people from [mundialis](https://www.mundialis.de/) and [terrest
 Prerequisites: Java 11 and maven 3.5
 
 * build with `mvn install`
-* copy into Geoserver's `WEB-INF/lib` to enable
+* copy into GeoServer's `WEB-INF/lib` to enable
 
 ## Download
 
@@ -29,7 +29,7 @@ You can also download released versions from the [terrestris nexus server](https
 
 ## Usage
 
-You can create datastore pointing to a single raster by pointing the file to an appropriate entry in the GRASS `cellhd`
+You can create a datastore pointing to a single raster by pointing the file to an appropriate entry in the GRASS `cellhd`
 directory. If you have a timeseries raster dataset, you can also point the file to the sqlite database containing the
 timeseries information (found in `tgis/sqlite.db` inside the mapset containing the timeseries).
 
@@ -39,7 +39,7 @@ database. When publishing a layer, make sure to enable WMS-TIME-support by check
 ## Contact
 
 Please make sure to get in [contact with us](https://www.mundialis.de/en/contact/) if you have feedback about this
-project or if want to contribute. We're looking forward to hearing from you!
+project or if you want to contribute. We're looking forward to hearing from you!
 
 
 

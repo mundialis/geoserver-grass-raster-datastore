@@ -1,9 +1,9 @@
 a.externalLink,
 a.externalLink[href^=https],
 a.externalLink[href^=http] {
-    background: none;
-    padding: 0;
-    text-decoration: underline;
+  background: none;
+  padding: 0;
+  text-decoration: underline;
 }
 
 footer {
