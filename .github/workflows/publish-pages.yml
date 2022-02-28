@@ -37,7 +37,7 @@ jobs:
         servers: '[
                     { "id": "nexus.terrestris.de", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" },
                     { "id": "nexus.terrestris.de-geoserver-extras", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" },
-                    { "id": "nexus.terrestris.de-snapshots-geoserver-extras", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" }
+                    { "id": "nexus.terrestris.de-snapshots-geoserver-extras", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" },
                     { "id": "github", "username": "hwbllmnn", "password": "${{ secrets.PA_TOKEN }}" }
                   ]'
 
