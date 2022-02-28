@@ -1,6 +1,9 @@
 name: Build and publish GeoServer GRASS datastore
 
 on:
+  push:
+    branches:
+      - master
   release:
     types: [published]
 
