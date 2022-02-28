@@ -29,12 +29,15 @@ You can also download released versions from the [terrestris nexus server](https
 
 ## Usage
 
-You can create a datastore pointing to a single raster by pointing the file to an appropriate entry in the GRASS `cellhd`
-directory. If you have a timeseries raster dataset, you can also point the file to the sqlite database containing the
-timeseries information (found in `tgis/sqlite.db` inside the mapset containing the timeseries).
+In GRASS GIS, data are stored in a simple hierarchical directory structure consisting of GRASS "database"
+(directory with projects), "location(s)" (projects) and "mapset(s)" (subprojects). A "location" is defined by its
+coordinate reference system (CRS). Each "location" can have many "mapsets" for managing different
+aspects of a project or project's subregions. When creating a new Location, GRASS GIS automatically
+creates a special Mapset called PERMANENT where the core data for the project can be stored.
 
-In case of a timeseries raster dataset you may get multiple layers in case you have multiple timeseries stored in the
-database. When publishing a layer, make sure to enable WMS-TIME-support by checking the box in the dimensions tab.
+To access data, specific map files have to be specified:
+- Raster data: you can create a datastore pointing to a single raster map by pointing the file to the map name in the GRASS mapset `cellhd` subdirectory.
+- Raster time series: In this case, besides accessing the raster maps directly, you can also point the file to the SQLite database containing the time series information (found in `tgis/sqlite.db` inside the mapset containing the timeseries). Note: In case of a raster time series dataset you may get multiple layers in case you have multiple timeseries stored in the database. When publishing a layer, make sure to enable WMS-TIME-support by checking the box in the dimensions tab.
 
 ## Contact
 
