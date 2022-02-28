@@ -15,8 +15,12 @@
     </fluidoSkin>
   </custom>
   <body>
-    <menu name="Overview">
-    </menu>
     <menu ref="reports" inherit="top"/>
+    <links>
+      <item name="mundialis" href="https://www.mundialis.de"/>
+      <item name="terrestris" href="https://www.terrestris.de"/>
+      <item name="Repository" href="https://github.com/mundialis/geoserver-grass-raster-datastore"/>
+    </links>
+    <footer><![CDATA[© 2022-present mundialis GmbH &amp; Co. KG / terrestris GmbH &amp; Co. KG <span class="divider">|</span> <a href="https://www.mundialis.de/en/imprint-impressum/">Imprint</a> <span class="divider">|</span> <a href="https://www.mundialis.de/en/datenschutzerklaerung/">Privacy Policy</a>]]></footer>
   </body>
 </project>

@@ -1,4 +1,4 @@
-## Geoserver GRASS datastore
+## GeoServer GRASS raster datastore
 
 Prerequisites: Java 11 and maven 3.5
 
