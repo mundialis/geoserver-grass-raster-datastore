@@ -9,9 +9,9 @@ _________________
 
 ## About
 
-The [GRASS raster datastore](https://github.com/mundialis/geoserver-grass-raster-datastore) makes it possible to use
-GRASS raster datastores as sources from within a GeoServer instance. This way it becomes very easy to publish GRASS
-data as web services through GeoServer.
+The [GeoServer GRASS raster datastore](https://github.com/mundialis/geoserver-grass-raster-datastore) makes it possible
+to use GRASS raster datastores as sources from within a GeoServer instance. This way it becomes very easy to publish
+GRASS data as web services through GeoServer.
 
 The GeoServer GRASS raster datastore -- what a name, suggestions for something more catchy welcome -- was initially
 developed by the people from [mundialis](https://www.mundialis.de/) and [terrestris](https://www.terrestris.de/).
@@ -37,14 +37,21 @@ creates a special Mapset called PERMANENT where the core data for the project ca
 
 To access data, specific map files have to be specified:
 - Raster data: you can create a datastore pointing to a single raster map by pointing the file to the map name in the GRASS mapset `cellhd` subdirectory.
-- Raster time series: In this case, besides accessing the raster maps directly, you can also point the file to the SQLite database containing the time series information (found in `tgis/sqlite.db` inside the mapset containing the timeseries). Note: In case of a raster time series dataset you may get multiple layers in case you have multiple timeseries stored in the database. When publishing a layer, make sure to enable WMS-TIME-support by checking the box in the dimensions tab.
+- Raster time series: In this case, besides accessing the raster maps directly, you can also point the file to the SQLite
+database containing the time series information (found in `tgis/sqlite.db` inside the mapset containing the timeseries).
+Note: In case of a raster time series dataset you may get multiple layers in case you have multiple timeseries stored in
+the database. When publishing a layer, make sure to enable WMS-TIME-support by checking the box in the dimensions tab.
 
 ## Contact
 
 Please make sure to get in [contact with us](https://www.mundialis.de/en/contact/) if you have feedback about this
 project or if you want to contribute. We're looking forward to hearing from you!
 
+## Acknowledgements
 
+This work has been co-financed under Grant Agreement Connecting Europe Facility (CEF) Telecom project 2018-EU-IA-0095
+by the European Union (https://ec.europa.eu/inea/en/connecting-europe-facility/cef-telecom/2018-eu-ia-0095).
 
-
-
+This work has been partly developed as joint contribution of mundialis and terrestris to the
+[mFUND](https://www.bmvi.de/SharedDocs/DE/Artikel/DG/mfund-projekte/fair.html) project
+[Anwenderfreundliche Bereitstellung von Klima- und Wetterdaten – FAIR](https://www.fair-opendata.de/).
