@@ -48,6 +48,10 @@
       <name>Nexus Snapshot Repository</name>
       <url>https://nexus.terrestris.de/repository/geoserver-extras/</url>
     </snapshotRepository>
+    <site>
+      <id>github</id>
+      <url>scm:git:git@github.com:mundialis/geoserver-grass-raster-datastore.git</url>
+    </site>
   </distributionManagement>
 
   <properties>
@@ -100,29 +104,6 @@
           </plugin>
         </plugins>
       </reporting>
-    </profile>
-    <profile>
-      <id>publish-site</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.github.github</groupId>
-            <artifactId>site-maven-plugin</artifactId>
-            <version>0.12</version>
-            <configuration>
-              <message>Creating site for ${project.version}</message>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>site</goal>
-                </goals>
-                <phase>deploy</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
   </profiles>
 
@@ -208,6 +189,14 @@
               </goals>
             </execution>
           </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-scm-publish-plugin</artifactId>
+          <version>3.1.0</version>
+          <configuration>
+            <scmBranch>gh-pages</scmBranch>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
