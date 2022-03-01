@@ -3,7 +3,7 @@
 Combining the C- and Java-tribe FOSS4G greatness of [GRASS](https://grass.osgeo.org/) and
 [GeoServer](http://geoserver.org/).
 
-![GRASS loves GeoServer!](./images/grass-heart-geoserver.svg)
+![GRASS loves GeoServer!](../resources/images/grass-heart-geoserver.svg)
 
 _________________
 
