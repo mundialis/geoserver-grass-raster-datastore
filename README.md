@@ -17,3 +17,5 @@ timeseries information (found in `tgis/sqlite.db` inside the mapset containing t
 
 In case of a timeseries raster dataset you may get multiple layers in case you have multiple timeseries stored in the
 database. When publishing a layer, make sure to enable WMS-TIME-support by checking the box in the dimensions tab.
+
+For more usage instructions, see [here](https://github.com/mundialis/geoserver-grass-raster-datastore/blob/master/src/site/markdown/index.md).
