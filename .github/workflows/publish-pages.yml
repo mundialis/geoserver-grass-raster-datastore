@@ -1,4 +1,4 @@
-name: Build and publish GeoServer GRASS datastore
+name: Publish mvn site to gh-pages
 
 on:
   push:
@@ -11,17 +11,17 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-    - name: Checkout sources
+    - name: Checkout sources 🔰
       uses: actions/checkout@v2
 
-    - name: Set up Java 11
+    - name: Set up Java 11 ⏬
       uses: actions/setup-java@v1.4.3
       with:
         java-version: 11
         java-package: jdk
         architecture: x64
 
-    - name: Handle caching of maven repository
+    - name: Handle caching of maven repository 💾
       uses: actions/cache@v2
       with:
         path: ~/.m2/repository
@@ -29,7 +29,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
 
-    - name: Create maven settings.xml with credentials
+    - name: Create maven settings.xml with credentials 📜+🔧+🔒
       uses: whelk-io/maven-settings-xml-action@v2
       with:
         servers: '[
@@ -38,7 +38,7 @@ jobs:
                     { "id": "nexus.terrestris.de-snapshots-geoserver-extras", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" }
                   ]'
 
-    - name: Build maven site
+    - name: Build maven site 🏗️
       run: mvn -B -P reporting surefire-report:report site
 
     - name: Deploy 🚀
