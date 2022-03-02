@@ -35,9 +35,14 @@ jobs:
         servers: '[
                     { "id": "nexus.terrestris.de", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" },
                     { "id": "nexus.terrestris.de-geoserver-extras", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" },
-                    { "id": "nexus.terrestris.de-snapshots-geoserver-extras", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" },
-                    { "id": "github", "username": "hwbllmnn", "password": "${{ secrets.PA_TOKEN }}" }
+                    { "id": "nexus.terrestris.de-snapshots-geoserver-extras", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" }
                   ]'
 
-    - name: Build and deploy maven site
-      run: mvn -B -P reporting surefire-report:report site site:stage scm-publish:publish-scm
+    - name: Build maven site
+      run: mvn -B -P reporting surefire-report:report site
+
+    - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4.2.5
+        with:
+          branch: gh-pages
+          folder: target/site
