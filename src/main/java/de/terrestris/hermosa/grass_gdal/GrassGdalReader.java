@@ -275,7 +275,10 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
           LOGGER.log(Level.WARNING, value.getDescriptor().getName().getCode());
           if (value.getDescriptor().getName().getCode().equals("ReadGridGeometry2D")) {
             GridGeometry2D geometry2D = ((ParameterValue<GridGeometry2D>) value).getValue();
-            finalSize = new int[]{geometry2D.getGridRange().getHigh(0) + 1, geometry2D.getGridRange().getHigh(1) + 1};
+            finalSize = new int[] {
+              geometry2D.getGridRange().getHigh(0) + 1,
+              geometry2D.getGridRange().getHigh(1) + 1
+            };
             GeneralEnvelope bbox = GeneralEnvelope.toGeneralEnvelope(geometry2D.getEnvelope2D());
             imageBounds = calculateRequiredPixels(bbox);
           }
@@ -309,6 +312,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         Integer dataBufferType = DATABUFFER_TYPES_MAP.get(dataType);
         LOGGER.log(Level.FINE, "Using gdal type " + GDAL_TYPES_MAP.get(dataType));
         LOGGER.log(Level.FINE, "Using data buffer type " + dataBufferType);
+        finalSize = new int[] {dataset.getRasterXSize(), dataset.getRasterYSize()};
         WritableRaster raster = RasterFactory
           .createBandedRaster(dataBufferType, finalSize[0], finalSize[1], numBands, null);
 
