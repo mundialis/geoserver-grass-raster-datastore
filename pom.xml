@@ -48,10 +48,10 @@
       <name>Nexus Snapshot Repository</name>
       <url>https://nexus.terrestris.de/repository/geoserver-extras/</url>
     </snapshotRepository>
-    <site>
-      <id>github</id>
-      <url>scm:git:git@github.com:mundialis/geoserver-grass-raster-datastore.git</url>
-    </site>
+<!--    <site>-->
+<!--      <id>github</id>-->
+<!--      <url>scm:git:git@github.com:mundialis/geoserver-grass-raster-datastore.git</url>-->
+<!--    </site>-->
   </distributionManagement>
 
   <properties>
