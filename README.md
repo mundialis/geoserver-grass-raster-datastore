@@ -21,7 +21,8 @@ Installation:
 
 Geoserver Launch:
 * set environment variable: `export JAVA_OPTS="-Djava.library.path=/usr/lib/java/gdal/"`
-* (re)start Geoserver: `/usr/share/geoserver/bin/startup.sh`
+* (re)start GeoServer: `/usr/share/geoserver/bin/startup.sh`
+* find the running GeoServer at http://localhost:8080/geoserver/web/
 
 ## Download
 
