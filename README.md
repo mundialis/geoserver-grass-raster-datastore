@@ -7,12 +7,21 @@ Combining the C- and Java-tribe FOSS4G greatness of [GRASS](https://grass.osgeo.
 
 [ℹ️ Homepage](https://mundialis.github.io/geoserver-grass-raster-datastore/)
 
-## Prerequisites
+## Prerequisites and Installation
 
 You'll need Java 11 and maven 3.5
 
 * build with `mvn install`
-* copy into Geoserver's `WEB-INF/lib` to enable
+
+Installation:
+* copy into Geoserver's `WEB-INF/lib` to enable the GRASS datastore:
+  * e.g., `cp target/geoserver-grass-raster-datastore-*.jar /usr/share/geoserver/webapps/geoserver/WEB-INF/lib/`
+* from GDAL's `gdal-java` package, copy `gdal.jar`:
+  * `(cd /usr/share/geoserver/webapps/geoserver/WEB-INF/lib ; cp /usr/lib/java/gdal/gdal.jar .)`
+
+Geoserver Launch:
+* set environment variable: `export JAVA_OPTS="-Djava.library.path=/usr/lib/java/gdal/"`
+* (re)start Geoserver: `/usr/share/geoserver/bin/startup.sh`
 
 ## Download
 
