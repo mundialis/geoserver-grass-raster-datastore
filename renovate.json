@@ -1,0 +1,4 @@
+{
+  "rangeStrategy": "pin",
+  "ignorePaths": ["target/**"]
+}
