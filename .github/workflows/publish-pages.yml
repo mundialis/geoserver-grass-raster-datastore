@@ -30,7 +30,7 @@ jobs:
           ${{ runner.os }}-maven-
 
     - name: Create maven settings.xml with credentials 📜+🔧+🔒
-      uses: whelk-io/maven-settings-xml-action@v2
+      uses: whelk-io/maven-settings-xml-action@v20
       with:
         servers: '[
                     { "id": "nexus.terrestris.de", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" },
