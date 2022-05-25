@@ -325,7 +325,7 @@
       <dependency>
         <groupId>org.gdal</groupId>
         <artifactId>gdal</artifactId>
-        <version>3.4.0</version>
+        <version>3.5.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
