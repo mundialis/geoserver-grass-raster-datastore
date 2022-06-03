@@ -9,6 +9,32 @@
   <packaging>jar</packaging>
 
   <name>GeoServer GRASS raster datastore</name>
+  <description>
+    A new datastore for GeoServer that allows to use GRASS data without hassle directly
+    in GeoServer. Combining the C- and Java-tribe FOSS4G greatness of GRASS and
+    GeoServer.
+  </description>
+  <url>https://mundialis.github.io/geoserver-grass-raster-datastore</url>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+      <comments>A business-friendly OSS license</comments>
+    </license>
+  </licenses>
+
+  <organization>
+    <name><![CDATA[mundialis GmbH & Co. KG]]>
+    </name>
+    <url>https://www.mundialis.de/</url>
+  </organization>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/mundialis/geoserver-grass-raster-datastore/issues</url>
+  </issueManagement>
 
   <scm>
     <url>https://github.com/mundialis/geoserver-grass-raster-datastore.git</url>
