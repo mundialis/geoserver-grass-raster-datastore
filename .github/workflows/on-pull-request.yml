@@ -1,0 +1,41 @@
+name: Build and check doc generation
+
+on: pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout sources 🔰
+      uses: actions/checkout@v3
+
+    - name: Set up Java 11 ☕♨️
+      uses: actions/setup-java@v3.3.0
+      with:
+        distribution: adopt
+        java-version: 11
+        java-package: jdk
+        architecture: x64
+
+    - name: Handle caching of maven repository 💾
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: Create maven settings.xml with credentials 📜+🔧+🔒
+      uses: whelk-io/maven-settings-xml-action@v20
+      with:
+        servers: '[
+                    { "id": "nexus.terrestris.de", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" },
+                    { "id": "nexus.terrestris.de-geoserver-extras", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" },
+                    { "id": "nexus.terrestris.de-snapshots-geoserver-extras", "username": "${{ secrets.NEXUS_USER }}", "password": "${{ secrets.NEXUS_PASSWORD }}" }
+                  ]'
+
+    - name: Clean and build project 🧽 + 🏗️
+      run: mvn -B clean install
+
+    - name: Build documentation 📖
+      run: mvn -B -P reporting surefire-report:report site
