@@ -312,7 +312,12 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
         Integer dataBufferType = DATABUFFER_TYPES_MAP.get(dataType);
         LOGGER.log(Level.FINE, "Using gdal type " + GDAL_TYPES_MAP.get(dataType));
         LOGGER.log(Level.FINE, "Using data buffer type " + dataBufferType);
-        finalSize = new int[] {dataset.getRasterXSize(), dataset.getRasterYSize()};
+
+        if (finalSize == null) {
+          LOGGER.warning("Unable to determine requested size.");
+          return null;
+        }
+
         WritableRaster raster = RasterFactory
           .createBandedRaster(dataBufferType, finalSize[0], finalSize[1], numBands, null);
 
