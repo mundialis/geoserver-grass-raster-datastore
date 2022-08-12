@@ -9,7 +9,7 @@ Combining the C- and Java-tribe FOSS4G greatness of [GRASS](https://grass.osgeo.
 
 ## Prerequisites and Installation
 
-You'll need Java 11 and maven 3.5
+You'll need Java 11, maven 3.5, GDAL (gdal-java) and the standalone [GRASS GIS driver for GDAL](https://github.com/OSGeo/gdal-grass).
 
 * build with `mvn install`
 
