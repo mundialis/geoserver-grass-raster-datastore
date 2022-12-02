@@ -318,6 +318,10 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
           return null;
         }
 
+        if (gdal.VersionInfo().compareTo("3050000") < 0) {
+          finalSize = new int[]{dataset.getRasterXSize(), dataset.getRasterYSize()};
+        }
+
         WritableRaster raster = RasterFactory
           .createBandedRaster(dataBufferType, finalSize[0], finalSize[1], numBands, null);
 
