@@ -339,7 +339,7 @@
       <dependency>
         <groupId>org.geotools</groupId>
         <artifactId>gt-coverage</artifactId>
-        <version>28.0</version>
+        <version>28.1</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
