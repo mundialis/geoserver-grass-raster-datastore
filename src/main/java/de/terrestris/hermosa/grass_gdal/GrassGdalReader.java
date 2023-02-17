@@ -104,6 +104,12 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
     DATABUFFER_TYPES_MAP.put(gdalconstConstants.GDT_Int32, DataBuffer.TYPE_INT);
     DATABUFFER_TYPES_MAP.put(gdalconstConstants.GDT_Float32, DataBuffer.TYPE_FLOAT);
     DATABUFFER_TYPES_MAP.put(gdalconstConstants.GDT_Float64, DataBuffer.TYPE_DOUBLE);
+    try {
+      // on some systems, the sqlite driver isn't loaded automatically for some reason
+      Class.forName("org.sqlite.JDBC");
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private int width;
@@ -200,8 +206,8 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
       }
       rs.close();
       stmt.close();
-      stmt = conn.prepareStatement(absoluteSql);
       for (String id : fileNames.keySet()) {
+        stmt = conn.prepareStatement(absoluteSql);
         stmt.setString(1, id);
         rs = stmt.executeQuery();
         if (rs.next()) {
