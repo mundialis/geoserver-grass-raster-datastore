@@ -19,7 +19,7 @@ jobs:
     - name: Set up Java 11 ⏬
       uses: actions/setup-java@v3.10.0
       with:
-        distribution: adopt
+        distribution: temurin
         java-version: 11
         java-package: jdk
         architecture: x64
