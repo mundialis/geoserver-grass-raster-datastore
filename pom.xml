@@ -407,7 +407,7 @@
       <dependency>
         <groupId>de.terrestris</groupId>
         <artifactId>terrestris-utils</artifactId>
-        <version>0.3.2</version>
+        <version>1.0.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>
