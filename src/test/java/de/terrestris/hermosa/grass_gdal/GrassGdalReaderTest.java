@@ -34,7 +34,7 @@ import java.nio.file.Files;
 
 public class GrassGdalReaderTest {
 
-  public static final GenericContainer geoserver = new GenericContainer(DockerImageName.parse("terrestris/geoserver:2.21.4"))
+  public static final GenericContainer geoserver = new GenericContainer(DockerImageName.parse("terrestris/geoserver:2.24.0"))
     .withExposedPorts(8080)
     .withFileSystemBind("target", "/opt/additional_libs", BindMode.READ_ONLY)
     .withFileSystemBind("target/geoserver_data", "/opt/geoserver_data", BindMode.READ_WRITE)
@@ -53,11 +53,11 @@ public class GrassGdalReaderTest {
   }
 
   @Test
-  public void testGrassGdalReader() throws IOException {
-    String request = "/geoserver/test/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fjpeg&TRANSPARENT=true&STYLES&LAYERS=test%3Atest&exceptions=application%2Fvnd.ogc.se_inimage&SRS=EPSG%3A25832&WIDTH=768&HEIGHT=768&BBOX=0.03728098677702735%2C0.05592148016554099%2C0.9320246694256837%2C0.9506651628141973";
-    String url = String.format("http://%s:%s", geoserver.getHost(), geoserver.getFirstMappedPort()) + request;
-    BufferedImage image = ImageIO.read(new URL(url));
-    Assertions.assertNotNull(image);
+  public void testGrassGdalReader() throws IOException, InterruptedException {
+      String request = "/geoserver/test/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fjpeg&TRANSPARENT=true&STYLES&LAYERS=test%3Atest&exceptions=application%2Fvnd.ogc.se_xml&SRS=EPSG%3A25832&WIDTH=768&HEIGHT=768&BBOX=0.03728098677702735%2C0.05592148016554099%2C0.9320246694256837%2C0.9506651628141973";
+      String url = String.format("http://%s:%s", geoserver.getHost(), geoserver.getFirstMappedPort()) + request;
+      BufferedImage image = ImageIO.read(new URL(url));
+      Assertions.assertNotNull(image);
   }
 
 }
