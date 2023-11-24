@@ -88,6 +88,8 @@
     <sonar.host.url>https://sq.terrestris.de</sonar.host.url>
     <sonar.login>terrestris</sonar.login>
     <sonar.sources>src/main/</sonar.sources>
+    <geotools.version>30.1</geotools.version>
+    <log4j.version>2.22.0</log4j.version>
   </properties>
 
   <profiles>
@@ -359,7 +361,7 @@
       <dependency>
         <groupId>org.geotools</groupId>
         <artifactId>gt-coverage</artifactId>
-        <version>29.2</version>
+        <version>${geotools.version}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
@@ -413,7 +415,7 @@
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-core</artifactId>
-        <version>2.22.0</version>
+        <version>${log4j.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -435,7 +437,7 @@
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>
-        <version>2.22.0</version>
+        <version>${log4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
@@ -476,7 +478,7 @@
       <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
-        <version>2.22.0</version>
+        <version>${log4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>

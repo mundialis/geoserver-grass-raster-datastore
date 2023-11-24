@@ -22,6 +22,16 @@ import org.gdal.gdal.Dataset;
 import org.gdal.gdal.gdal;
 import org.gdal.gdalconst.gdalconstConstants;
 import org.gdal.osr.SpatialReference;
+import org.geotools.api.coverage.grid.Format;
+import org.geotools.api.coverage.grid.GridEnvelope;
+import org.geotools.api.data.DataSourceException;
+import org.geotools.api.parameter.GeneralParameterValue;
+import org.geotools.api.parameter.ParameterDescriptor;
+import org.geotools.api.parameter.ParameterValue;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.datum.PixelInCell;
+import org.geotools.api.referencing.operation.MathTransform;
 import org.geotools.coverage.CoverageFactoryFinder;
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GridCoverage2D;
@@ -29,21 +39,11 @@ import org.geotools.coverage.grid.GridCoverageFactory;
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.coverage.grid.io.AbstractGridCoverage2DReader;
 import org.geotools.coverage.grid.io.GridCoverage2DReader;
-import org.geotools.data.DataSourceException;
-import org.geotools.geometry.GeneralEnvelope;
+import org.geotools.geometry.GeneralBounds;
 import org.geotools.referencing.CRS;
 import org.geotools.util.DateRange;
 import org.geotools.util.factory.Hints;
 import org.geotools.util.logging.Logging;
-import org.opengis.coverage.grid.Format;
-import org.opengis.coverage.grid.GridEnvelope;
-import org.opengis.parameter.GeneralParameterValue;
-import org.opengis.parameter.ParameterDescriptor;
-import org.opengis.parameter.ParameterValue;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.datum.PixelInCell;
-import org.opengis.referencing.operation.MathTransform;
 import org.sqlite.SQLiteConfig;
 
 import javax.media.jai.RasterFactory;
@@ -155,7 +155,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
     coverageFactory = new GridCoverageFactory();
     crs = CRS.decode("EPSG:32119");
     // instantiate the bounds based on the default CRS
-    originalEnvelope = new GeneralEnvelope(CRS.getEnvelope(crs));
+    originalEnvelope = new GeneralBounds(CRS.getEnvelope(crs));
     originalEnvelope.setCoordinateReferenceSystem(crs);
     originalGridRange = new GeneralGridEnvelope(originalEnvelope, PixelInCell.CELL_CENTER);
     coverageName = file.getName();
@@ -285,7 +285,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
               geometry2D.getGridRange().getHigh(0) + 1,
               geometry2D.getGridRange().getHigh(1) + 1
             };
-            GeneralEnvelope bbox = GeneralEnvelope.toGeneralEnvelope(geometry2D.getEnvelope2D());
+            GeneralBounds bbox = GeneralBounds.toGeneralEnvelope(geometry2D.getEnvelope2D());
             imageBounds = calculateRequiredPixels(bbox);
           }
           if (value.getDescriptor().getName().getCode().equals("TIME")) {
@@ -439,7 +439,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
     }
   }
 
-  private int[] calculateRequiredPixels(GeneralEnvelope bbox) {
+  private int[] calculateRequiredPixels(GeneralBounds bbox) {
     double origMinX = originalEnvelope.getMinimum(0);
     double minx = Math.max(bbox.getMinimum(0), origMinX);
     double origMinY = originalEnvelope.getMinimum(1);
@@ -462,13 +462,13 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
     return new int[]{(int) Math.floor(x), (int) Math.floor(y), targetWidth, targetHeight};
   }
 
-  private GeneralEnvelope calculateSubEnvelope(int[] imageCoordinates) {
+  private GeneralBounds calculateSubEnvelope(int[] imageCoordinates) {
     double minx = originalEnvelope.getMinimum(0) + imageCoordinates[0] * resx;
     double maxx = minx + imageCoordinates[2] * resx;
     double maxy = originalEnvelope.getMaximum(1) - Math.abs(imageCoordinates[1] * resy);
     double miny = maxy - Math.abs(imageCoordinates[3] * resy);
 
-    GeneralEnvelope generalEnvelope = new GeneralEnvelope(new double[]{minx, miny}, new double[]{maxx, maxy});
+    GeneralBounds generalEnvelope = new GeneralBounds(new double[]{minx, miny}, new double[]{maxx, maxy});
     generalEnvelope.setCoordinateReferenceSystem(crs);
     return generalEnvelope;
   }
@@ -483,7 +483,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
     resx = transform[1];
     resy = transform[5];
 
-    originalEnvelope = new GeneralEnvelope(new double[]{minx, miny}, new double[]{maxx, maxy});
+    originalEnvelope = new GeneralBounds(new double[]{minx, miny}, new double[]{maxx, maxy});
     originalEnvelope.setCoordinateReferenceSystem(crs);
     originalGridRange = new GeneralGridEnvelope(originalEnvelope, PixelInCell.CELL_CENTER);
   }
@@ -540,7 +540,7 @@ public class GrassGdalReader extends AbstractGridCoverage2DReader {
   }
 
   @Override
-  public GeneralEnvelope getOriginalEnvelope(String coverageName) {
+  public GeneralBounds getOriginalEnvelope(String coverageName) {
     return super.getOriginalEnvelope(this.coverageName);
   }
 
