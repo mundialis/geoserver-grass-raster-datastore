@@ -94,10 +94,10 @@ function toggleDisplay(elementId) {
 <tr class="b">
 <td style="text-align: left;">1</td>
 <td>0</td>
+<td>1</td>
 <td>0</td>
-<td>0</td>
-<td>100%</td>
-<td>64.58 s</td></tr></table><br />
+<td>0%</td>
+<td>45.58 s</td></tr></table><br />
 <p>Note: failures are anticipated and checked for with assertions while errors are unanticipated.</p><br /></section><section><a id="Package_List"></a>
 <h1>Package List</h1>
 <p>[<a href="#Summary">Summary</a>] [<a href="#Package_List">Package List</a>] [<a href="#Test_Cases">Test Cases</a>]</p><br />
@@ -114,10 +114,10 @@ function toggleDisplay(elementId) {
 <td style="text-align: left;"><a href="#de.terrestris.hermosa.grass_gdal">de.terrestris.hermosa.grass_gdal</a></td>
 <td>1</td>
 <td>0</td>
+<td>1</td>
 <td>0</td>
-<td>0</td>
-<td>100%</td>
-<td>64.58 s</td></tr></table><br />
+<td>0%</td>
+<td>45.58 s</td></tr></table><br />
 <p>Note: package statistics are not computed recursively, they only sum up all of its testsuites numbers.</p><section><a id="de.terrestris.hermosa.grass_gdal"></a>
 <h2>de.terrestris.hermosa.grass_gdal</h2>
 <table class="table table-striped">
@@ -131,22 +131,57 @@ function toggleDisplay(elementId) {
 <th>Success Rate</th>
 <th>Time</th></tr>
 <tr class="b">
-<td style="text-align: left;"><a href="#de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest"><img src="images/icon_success_sml.gif" /></a></td>
+<td style="text-align: left;"><a href="#de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest"><img src="images/icon_warning_sml.gif" /></a></td>
 <td><a href="#de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest">GrassGdalReaderTest</a></td>
 <td>1</td>
 <td>0</td>
+<td>1</td>
 <td>0</td>
-<td>0</td>
-<td>100%</td>
-<td>64.58 s</td></tr></table></section><br /></section><section><a id="Test_Cases"></a>
+<td>0%</td>
+<td>45.58 s</td></tr></table></section><br /></section><section><a id="Test_Cases"></a>
 <h1>Test Cases</h1>
 <p>[<a href="#Summary">Summary</a>] [<a href="#Package_List">Package List</a>] [<a href="#Test_Cases">Test Cases</a>]</p><section><a id="de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest"></a>
 <h2>GrassGdalReaderTest</h2>
 <table class="table table-striped">
 <tr class="a">
-<td style="text-align: left;"><img src="images/icon_success_sml.gif" /></td>
-<td><a id="TC_de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest.testGrassGdalReader"></a>testGrassGdalReader</td>
-<td>0.661 s</td></tr></table></section><br /></section>
+<td style="text-align: left;"><a href="#de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest.testGrassGdalReader"><img src="images/icon_error_sml.gif" /></a></td>
+<td><a id="TC_de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest.testGrassGdalReader"></a><a href="#de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest.testGrassGdalReader">testGrassGdalReader</a>
+<div class="detailToggle" style="display:inline"><a href="javascript:toggleDisplay('de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest.testGrassGdalReader');"><span style="display:inline;" id="de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest.testGrassGdalReader-off"> + </span><span style="display:none;" id="de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest.testGrassGdalReader-on"> - </span>[ Detail ]</a></div></td>
+<td>0.769 s</td></tr>
+<tr class="b">
+<td style="text-align: left;">-</td>
+<td>expected: not &lt;null&gt;</td>
+<td>-</td></tr>
+<tr id="de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest.testGrassGdalReader-failure" style="display:none;" class="a">
+<td style="text-align: left;">-</td>
+<td>
+<div class="verbatim">
+<pre>org.opentest4j.AssertionFailedError: expected: not &lt;null&gt;
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:152)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertNotNull.failNull(AssertNotNull.java:49)
+	at org.junit.jupiter.api.AssertNotNull.assertNotNull(AssertNotNull.java:35)
+	at org.junit.jupiter.api.AssertNotNull.assertNotNull(AssertNotNull.java:30)
+	at org.junit.jupiter.api.Assertions.assertNotNull(Assertions.java:300)
+	at de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest.testGrassGdalReader(GrassGdalReaderTest.java:60)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:566)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1541)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1541)
+</pre></div></td>
+<td>-</td></tr></table></section><br /></section><section><a id="Failure_Details"></a>
+<h1>Failure Details</h1>
+<p>[<a href="#Summary">Summary</a>] [<a href="#Package_List">Package List</a>] [<a href="#Test_Cases">Test Cases</a>]</p><br />
+<table class="table table-striped">
+<tr class="a">
+<td style="text-align: left;"><img src="images/icon_error_sml.gif" /></td>
+<td><a id="de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest.testGrassGdalReader"></a>testGrassGdalReader</td></tr>
+<tr class="b">
+<td style="text-align: left;">-</td>
+<td>org.opentest4j.AssertionFailedError: expected: not &lt;null&gt;</td></tr>
+<tr class="a">
+<td style="text-align: left;">-</td>
+<td>
+<div id="testGrassGdalReader-failure">de.terrestris.hermosa.grass_gdal.GrassGdalReaderTest:60</div></td></tr></table><br /></section>
         </main>
       </div>
     </div>
