@@ -373,7 +373,7 @@
       <dependency>
         <groupId>org.gdal</groupId>
         <artifactId>gdal</artifactId>
-        <version>3.7.1</version>
+        <version>3.8.0</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
