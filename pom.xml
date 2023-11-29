@@ -478,7 +478,7 @@
       <dependency>
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
-        <version>${log4j.version}</version>
+        <version>2.23.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
