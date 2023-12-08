@@ -47,6 +47,7 @@ public class GrassGdalReaderTest {
     IOUtils.copy(url, file);
     IOUtils.copy(new URL("https://repo1.maven.org/maven2/org/gdal/gdal/3.4.0/gdal-3.4.0.jar"), new File("target/gdal.jar"));
     File target = new File("target");
+    ZipUtils.zip(new File(target, "grass.jar"), new File("target/classes"), true);
     ZipUtils.unzip(file, target);
     file.delete();
     geoserver.start();

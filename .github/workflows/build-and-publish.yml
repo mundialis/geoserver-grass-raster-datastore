@@ -42,7 +42,7 @@ jobs:
                   ]'
 
     - name: Build the datastore with Maven and publish artifacts to nexus 🏗️+🚀
-      run: mvn -B install -DskipTests && mvn -B deploy
+      run: mvn -B deploy -DskipTests
 
     - name: Analyse code and publish to SonarQube 📊
       run: mvn -B -Dsonar.password=${{ secrets.SONAR_PASSWORD }} sonar:sonar

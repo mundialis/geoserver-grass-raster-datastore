@@ -35,7 +35,7 @@ jobs:
                   ]'
 
     - name: Clean and build project 🧽 + 🏗️
-      run: mvn -B install -DskipTests && mvn -B install
+      run: mvn -B install
 
     - name: Build documentation 📖
       run: mvn -B -P reporting surefire-report:report site
